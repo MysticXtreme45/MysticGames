@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏆 Torneo — Mystic Creations</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #07070f;
+    --panel: #0e0e1a;
+    --border: #1c1932;
+    --gold: #f59e0b;
+    --accent: #7c3aed;
+    --accent2: #a855f7;
+    --red: #dc2626;
+    --green: #16a34a;
+    --text: #e2e8f0;
+    --muted: #64748b;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Rajdhani',sans-serif;
+    min-height:100vh;
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 20% 80%, rgba(124,58,237,0.06) 0%, transparent 50%);
+  }
+
+  .stars { position:fixed; inset:0; pointer-events:none; z-index:0; }
+  .star { position:absolute; border-radius:50%; background:white; animation:tw 3s infinite; }
+  @keyframes tw { 0%,100%{opacity:.2} 50%{opacity:.9} }
+
+  #app { position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:10px; }
+
+  /* HEADER */
+  .t-header { text-align:center; padding:14px 0 10px; }
+  .t-header h1 {
+    font-family:'Cinzel',serif;
+    font-size:clamp(1.5rem,4vw,2.2rem);
+    font-weight:900;
+    background:linear-gradient(135deg,var(--gold),#fbbf24,var(--accent2));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    letter-spacing:4px;
+  }
+  .t-sub { font-size:0.75rem; color:var(--muted); letter-spacing:3px; margin-top:3px; }
+  .t-info { margin-top:8px; display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+  .t-badge {
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:4px 14px;
+    font-size:0.75rem;
+    display:flex; gap:6px; align-items:center;
+  }
+  .t-badge .label { color:var(--muted); }
+  .t-badge .val   { color:var(--gold); font-weight:700; }
+
+  /* TOURNAMENT PHASES */
+  .phases {
+    display:flex;
+    gap:10px;
+    overflow-x:auto;
+    padding:4px 0 10px;
+    align-items:flex-start;
+  }
+  .phases::-webkit-scrollbar { height:4px; }
+  .phases::-webkit-scrollbar-thumb { background:var(--accent); border-radius:2px; }
+
+  .phase {
+    flex-shrink:0;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    min-width:200px;
+  }
+  .phase-title {
+    font-family:'Cinzel',serif;
+    font-size:0.72rem;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:3px;
+    text-align:center;
+    padding:6px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:4px;
+  }
+  .phase-title.active { color:var(--gold); }
+
+  /* MATCH CARD */
+  .match-card {
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    overflow:hidden;
+    transition:all 0.3s;
+    cursor:pointer;
+  }
+  .match-card:hover { border-color:rgba(124,58,237,0.5); transform:translateY(-2px); }
+  .match-card.active-match { border-color:var(--gold); box-shadow:0 0 15px rgba(245,158,11,0.2); }
+  .match-card.completed { border-color:rgba(22,163,74,0.4); }
+
+  .match-header {
+    background:rgba(255,255,255,0.03);
+    padding:5px 10px;
+    font-size:0.65rem;
+    color:var(--muted);
+    display:flex; justify-content:space-between; align-items:center;
+    border-bottom:1px solid var(--border);
+  }
+  .match-status { font-size:0.62rem; }
+  .match-status.live   { color:var(--gold); animation:blink 1s infinite; }
+  .match-status.done   { color:var(--green); }
+  .match-status.wait   { color:var(--muted); }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .player-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 12px;
+    border-bottom:1px solid rgba(255,255,255,0.04);
+    transition:background 0.2s;
+    gap:8px;
+  }
+  .player-row:last-child { border-bottom:none; }
+  .player-row.winner { background:rgba(245,158,11,0.08); }
+  .player-row.loser  { background:rgba(255,255,255,0.01); opacity:0.6; }
+  .player-row.tbd    { opacity:0.4; }
+
+  .player-info { display:flex; align-items:center; gap:8px; min-width:0; }
+  .player-avatar { font-size:1.2rem; flex-shrink:0; }
+  .player-details { min-width:0; }
+  .player-name-t {
+    font-size:0.78rem; font-weight:700;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    max-width:110px;
+  }
+  .player-weapon-t { font-size:0.62rem; color:var(--muted); }
+
+  .player-score {
+    font-family:'Cinzel',serif;
+    font-size:1rem;
+    font-weight:700;
+    flex-shrink:0;
+  }
+  .player-score.win  { color:var(--gold); }
+  .player-score.lose { color:var(--muted); }
+  .winner-crown { font-size:0.8rem; flex-shrink:0; }
+
+  /* CONNECTOR LINE */
+  .connector {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:30px;
+    flex-shrink:0;
+  }
+  .connector::before {
+    content:'';
+    width:2px;
+    height:40px;
+    background:var(--border);
+  }
+
+  /* PHASES ARROW */
+  .phase-arrow {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0 4px;
+    color:var(--accent2);
+    font-size:1.2rem;
+    flex-shrink:0;
+    align-self:center;
+    margin-top:30px;
+  }
+
+  /* CHAMPION */
+  .champion-section {
+    background:linear-gradient(135deg,rgba(245,158,11,0.1),rgba(124,58,237,0.1));
+    border:1px solid rgba(245,158,11,0.4);
+    border-radius:16px;
+    padding:20px;
+    text-align:center;
+    display:none;
+    animation:fadein 0.5s;
+  }
+  .champion-section.show { display:block; }
+  @keyframes fadein { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+  .champ-crown { font-size:3rem; margin-bottom:8px; }
+  .champ-title {
+    font-family:'Cinzel',serif;
+    font-size:1.4rem;
+    font-weight:900;
+    color:var(--gold);
+    text-shadow:0 0 20px rgba(245,158,11,0.5);
+    margin-bottom:4px;
+  }
+  .champ-name { font-size:1.2rem; font-weight:700; color:var(--text); }
+  .champ-prize { font-size:0.9rem; color:var(--muted); margin-top:6px; }
+  .champ-prize span { color:var(--gold); font-weight:700; }
+
+  /* WAITING / ACTIVE MATCH OVERLAY */
+  .current-match-banner {
+    background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(124,58,237,0.1));
+    border:1px solid rgba(245,158,11,0.4);
+    border-radius:12px;
+    padding:12px 16px;
+    margin-bottom:10px;
+    display:none;
+  }
+  .current-match-banner.show { display:block; }
+  .cmb-title {
+    font-family:'Cinzel',serif;
+    font-size:0.8rem;
+    color:var(--gold);
+    letter-spacing:2px;
+    margin-bottom:8px;
+  }
+  .cmb-players {
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;
+  }
+  .cmb-player {
+    background:var(--panel);
+    border-radius:10px;
+    padding:8px 16px;
+    text-align:center;
+    font-weight:700;
+    font-size:0.85rem;
+    min-width:100px;
+  }
+  .cmb-player.p1 { border:1px solid rgba(124,58,237,0.5); }
+  .cmb-player.p2 { border:1px solid rgba(220,38,38,0.5); }
+  .cmb-vs { color:var(--gold); font-family:'Cinzel',serif; font-weight:900; font-size:1.1rem; }
+  .btn-join {
+    display:block;
+    margin:10px auto 0;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none; border-radius:10px; color:white;
+    font-family:'Rajdhani',sans-serif; font-size:0.9rem; font-weight:700;
+    padding:8px 24px; cursor:pointer; letter-spacing:1px;
+    transition:all 0.2s; text-decoration:none;
+  }
+  .btn-join:hover { transform:translateY(-2px); box-shadow:0 4px 15px rgba(124,58,237,0.4); }
+
+  /* PLAYERS LIST */
+  .players-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(150px,1fr));
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .player-chip {
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:8px 12px;
+    display:flex; align-items:center; gap:8px;
+    font-size:0.78rem;
+  }
+  .player-chip .seed { color:var(--muted); font-size:0.65rem; }
+  .player-chip.eliminated { opacity:0.4; text-decoration:line-through; }
+  .player-chip.champion   { border-color:var(--gold); background:rgba(245,158,11,0.08); }
+
+  .section-title {
+    font-family:'Cinzel',serif;
+    font-size:0.72rem;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:3px;
+    margin-bottom:8px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* RESPONSIVE */
+  @media (max-width:600px) {
+    .phases { flex-direction:column; }
+    .phase-arrow { transform:rotate(90deg); margin:0 auto; }
+    .phase { min-width:auto; width:100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div id="app">
+  <div class="t-header">
+    <h1>🏆 TORNEO MÍSTICO</h1>
+    <div class="t-sub">Mystic Creations — Bracket de Batalla</div>
+    <div class="t-info">
+      <div class="t-badge"><span class="label">Premio:</span><span class="val" id="prize-display">—</span></div>
+      <div class="t-badge"><span class="label">Jugadores:</span><span class="val" id="count-display">—</span></div>
+      <div class="t-badge"><span class="label">Ronda:</span><span class="val" id="round-display">—</span></div>
+      <div class="t-badge"><span class="label">Estado:</span><span class="val" id="status-display">—</span></div>
+    </div>
+  </div>
+
+  <!-- CAMPEÓN (se muestra al final) -->
+  <div class="champion-section" id="champion-section">
+    <div class="champ-crown">👑</div>
+    <div class="champ-title">¡CAMPEÓN DEL TORNEO!</div>
+    <div class="champ-name" id="champ-name">—</div>
+    <div class="champ-prize">Premio: <span id="champ-prize">—</span></div>
+  </div>
+
+  <!-- PARTIDO ACTUAL -->
+  <div class="current-match-banner" id="cmb">
+    <div class="cmb-title">⚔️ DUELO EN CURSO</div>
+    <div class="cmb-players">
+      <div class="cmb-player p1" id="cmb-p1">—</div>
+      <div class="cmb-vs">VS</div>
+      <div class="cmb-player p2" id="cmb-p2">—</div>
+    </div>
+    <a class="btn-join" id="cmb-link" href="#" target="_blank">🎮 Abrir Duelo Web</a>
+  </div>
+
+  <!-- JUGADORES PARTICIPANTES -->
+  <div class="section-title">👥 Participantes</div>
+  <div class="players-grid" id="players-grid"></div>
+
+  <!-- BRACKET -->
+  <div class="section-title">⚔️ Bracket</div>
+  <div class="phases" id="bracket"></div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// PARÁMETROS DE URL
+// El bot manda: ?torneo=ID&premio=N&jugadores=J1|J2|J3...&armas=A1|A2|A3...&niveles=N1|N2|N3...&duelo_base=URL_DUELO
+// ══════════════════════════════════════════════════════
+const P      = new URLSearchParams(location.search);
+const T_ID   = P.get('torneo')     || 'T' + Math.random().toString(36).slice(2,6).toUpperCase();
+const PREMIO = parseInt(P.get('premio') || '5000');
+const WEB_BASE = decodeURIComponent(P.get('web_base') || 'https://mysticxtreme45.github.io/MysticGames/');
+
+const jugadoresRaw = decodeURIComponent(P.get('jugadores') || 'Alpha|Beta|Gamma|Delta');
+const armasRaw     = decodeURIComponent(P.get('armas')     || '');
+const nivelesRaw   = decodeURIComponent(P.get('niveles')   || '');
+
+const JUGADORES = jugadoresRaw.split('|').filter(Boolean);
+const ARMAS     = armasRaw.split('|');
+const NIVELES   = nivelesRaw.split('|').map(n => parseInt(n) || 1);
+
+// Generar estrellas
+(function(){
+  const c = document.getElementById('stars');
+  for(let i=0;i<70;i++){
+    const s=document.createElement('div'); s.className='star';
+    const z=Math.random()*2+0.5;
+    s.style.cssText=`width:${z}px;height:${z}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*3}s;animation-duration:${2+Math.random()*3}s`;
+    c.appendChild(s);
+  }
+})();
+
+// ══════════════════════════════════════════════════════
+// ESTRUCTURA DEL TORNEO
+// ══════════════════════════════════════════════════════
+const ARMA_EMOJIS = {
+  "Pistola de Agua":"🔫","Láser Neón":"⚡","Arco Eléctrico":"🏹","Cañón Místico":"💥",
+  "Espada Plasma":"🗡️","Rifle Cuántico":"🎯","Bastón del Vacío":"🪄","Guantelete Cósmico":"🥊","Espada del Dueño":"👑"
+};
+const AVATARES = ["🧙","⚔️","🔮","🏹","💀","🐉","⚡","🌟","👑","🔥","💎","🛡️"];
+
+function buildPlayers() {
+  return JUGADORES.map((nombre, i) => ({
+    id: i,
+    nombre,
+    arma: ARMAS[i] || "Pistola de Agua",
+    nivel: NIVELES[i] || 1,
+    avatar: AVATARES[i % AVATARES.length],
+    eliminado: false,
+  }));
+}
+
+// Generar bracket (potencia de 2)
+function nextPow2(n) {
+  let p = 1;
+  while (p < n) p *= 2;
+  return p;
+}
+
+function buildBracket(players) {
+  const size = nextPow2(players.length);
+  // Rellenar con BYEs si es necesario
+  const padded = [...players];
+  while (padded.length < size) padded.push(null); // null = BYE
+
+  // Generar rondas
+  const rounds = [];
+  let currentRound = [];
+
+  // Ronda 1 — emparejar
+  for (let i = 0; i < padded.length; i += 2) {
+    const p1 = padded[i];
+    const p2 = padded[i+1];
+    let winner = null;
+    // Si alguno es BYE, el otro avanza automáticamente
+    if (!p2) winner = p1;
+    else if (!p1) winner = p2;
+    currentRound.push({ p1, p2, winner, id: `r0_m${i/2}` });
+  }
+  rounds.push(currentRound);
+
+  // Rondas siguientes
+  let prev = currentRound;
+  while (prev.length > 1) {
+    const next = [];
+    for (let i = 0; i < prev.length; i += 2) {
+      next.push({
+        p1: prev[i].winner || null,
+        p2: (prev[i+1] && prev[i+1].winner) || null,
+        winner: null,
+        id: `r${rounds.length}_m${i/2}`,
+        feedFrom: [prev[i].id, prev[i+1] ? prev[i+1].id : null],
+      });
+    }
+    rounds.push(next);
+    prev = next;
+  }
+
+  return rounds;
+}
+
+// ══════════════════════════════════════════════════════
+// ESTADO DEL TORNEO (localStorage para sincronizar)
+// ══════════════════════════════════════════════════════
+const T_KEY = `torneo_${T_ID}`;
+
+function getTState() {
+  try { return JSON.parse(localStorage.getItem(T_KEY) || 'null'); }
+  catch { return null; }
+}
+function setTState(s) {
+  localStorage.setItem(T_KEY, JSON.stringify(s));
+  localStorage.setItem(T_KEY + '_tick', Date.now());
+}
+
+function initTState() {
+  const players = buildPlayers();
+  const bracket = buildBracket(players);
+  const ts = {
+    players,
+    bracket,
+    roundActual: 0,
+    matchActual: 0,
+    terminado: false,
+    campeon: null,
+    duelos: {}, // matchId -> duelo link
+    premio: PREMIO,
+  };
+  setTState(ts);
+  return ts;
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════
+function renderAll() {
+  let ts = getTState();
+  if (!ts) ts = initTState();
+
+  // Header info
+  document.getElementById('prize-display').textContent  = `${ts.premio.toLocaleString()} pts`;
+  document.getElementById('count-display').textContent  = ts.players.length;
+  document.getElementById('round-display').textContent  = `${ts.roundActual + 1} / ${ts.bracket.length}`;
+  document.getElementById('status-display').textContent = ts.terminado ? '✅ Finalizado' : '🔴 En curso';
+
+  // Campeón
+  if (ts.campeon) {
+    document.getElementById('champ-name').textContent  = ts.campeon.nombre;
+    document.getElementById('champ-prize').textContent = `${ts.premio.toLocaleString()} pts`;
+    document.getElementById('champion-section').classList.add('show');
+  }
+
+  // Jugadores
+  renderPlayers(ts);
+
+  // Bracket
+  renderBracket(ts);
+
+  // Duelo actual
+  renderCurrentMatch(ts);
+}
+
+function renderPlayers(ts) {
+  const grid = document.getElementById('players-grid');
+  grid.innerHTML = '';
+  ts.players.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'player-chip' + (p.eliminado ? ' eliminated' : '') + (ts.campeon && ts.campeon.id === p.id ? ' champion' : '');
+    div.innerHTML = `
+      <span style="font-size:1.1rem">${p.avatar}</span>
+      <div>
+        <div style="font-weight:700">${p.nombre}</div>
+        <div class="seed">${ARMA_EMOJIS[p.arma]||'🔫'} ${p.arma} · Lv.${p.nivel}</div>
+      </div>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+function roundName(round, total) {
+  const remaining = total - round;
+  if (remaining === 0) return '🏆 Final';
+  if (remaining === 1) return '🥈 Semifinal';
+  if (remaining === 2) return '🥉 Cuartos';
+  return `Ronda ${round + 1}`;
+}
+
+function renderBracket(ts) {
+  const container = document.getElementById('bracket');
+  container.innerHTML = '';
+
+  ts.bracket.forEach((round, ri) => {
+    const phase = document.createElement('div');
+    phase.className = 'phase';
+
+    const title = document.createElement('div');
+    title.className = 'phase-title' + (ri === ts.roundActual && !ts.terminado ? ' active' : '');
+    title.textContent = roundName(ri, ts.bracket.length - 1);
+    phase.appendChild(title);
+
+    round.forEach((match, mi) => {
+      const card = document.createElement('div');
+      const isActive = ri === ts.roundActual && mi === ts.matchActual;
+      const isDone   = match.winner !== null;
+      card.className = 'match-card' + (isActive ? ' active-match' : '') + (isDone ? ' completed' : '');
+      card.onclick   = () => openMatchDuel(ts, match);
+
+      const header = document.createElement('div');
+      header.className = 'match-header';
+      header.innerHTML = `<span>Duelo ${ri+1}-${mi+1}</span><span class="match-status ${isActive?'live':isDone?'done':'wait'}">${isActive?'🔴 EN VIVO':isDone?'✅ Finalizado':'⏳ Pendiente'}</span>`;
+      card.appendChild(header);
+
+      // Jugador 1
+      card.appendChild(makePlayerRow(match.p1, match.winner, true));
+      card.appendChild(makePlayerRow(match.p2, match.winner, false));
+
+      phase.appendChild(card);
+    });
+
+    container.appendChild(phase);
+
+    if (ri < ts.bracket.length - 1) {
+      const arrow = document.createElement('div');
+      arrow.className = 'phase-arrow';
+      arrow.textContent = '→';
+      container.appendChild(arrow);
+    }
+  });
+}
+
+function makePlayerRow(player, winner, isP1) {
+  const row = document.createElement('div');
+  if (!player) {
+    row.className = 'player-row tbd';
+    row.innerHTML = `<div class="player-info"><span class="player-avatar">❓</span><div class="player-details"><div class="player-name-t">Por determinar</div></div></div>`;
+    return row;
+  }
+  const isWinner = winner && winner.id === player.id;
+  const isLoser  = winner && winner.id !== player.id;
+  row.className = 'player-row' + (isWinner ? ' winner' : isLoser ? ' loser' : '');
+  row.innerHTML = `
+    <div class="player-info">
+      <span class="player-avatar">${player.avatar}</span>
+      <div class="player-details">
+        <div class="player-name-t">${player.nombre}</div>
+        <div class="player-weapon-t">${ARMA_EMOJIS[player.arma]||'🔫'} ${player.arma} · Lv.${player.nivel}</div>
+      </div>
+    </div>
+    <span class="player-score ${isWinner?'win':isLoser?'lose':''}">${isWinner?'W':isLoser?'L':'—'}</span>
+    ${isWinner ? '<span class="winner-crown">👑</span>' : ''}
+  `;
+  return row;
+}
+
+function renderCurrentMatch(ts) {
+  if (ts.terminado) { document.getElementById('cmb').classList.remove('show'); return; }
+  const match = ts.bracket[ts.roundActual]?.[ts.matchActual];
+  if (!match || !match.p1 || !match.p2) { document.getElementById('cmb').classList.remove('show'); return; }
+
+  document.getElementById('cmb').classList.add('show');
+  document.getElementById('cmb-p1').textContent = `${match.p1.avatar} ${match.p1.nombre}`;
+  document.getElementById('cmb-p2').textContent = `${match.p2.avatar} ${match.p2.nombre}`;
+
+  // Generar link al duelo
+  const salaId = `t_${T_ID}_r${ts.roundActual}_m${ts.matchActual}`;
+  const duelUrl = buildDuelUrl(match.p1, match.p2, salaId, 1);
+  document.getElementById('cmb-link').href = duelUrl;
+}
+
+function buildDuelUrl(p1, p2, sala, jugador) {
+  const base = WEB_BASE + 'duelo.html';
+  return `${base}?sala=${encodeURIComponent(sala)}&p1=${encodeURIComponent(p1.nombre)}&p2=${encodeURIComponent(p2.nombre)}&p1arma=${encodeURIComponent(p1.arma)}&p2arma=${encodeURIComponent(p2.arma)}&p1nivel=${p1.nivel}&p2nivel=${p2.nivel}&jugador=${jugador}`;
+}
+
+function openMatchDuel(ts, match) {
+  if (!match.p1 || !match.p2 || match.winner) return;
+  const ri = ts.roundActual;
+  const mi = ts.matchActual;
+  const salaId = `t_${T_ID}_r${ri}_m${mi}`;
+  const url = buildDuelUrl(match.p1, match.p2, salaId, 1);
+  window.open(url, '_blank');
+}
+
+// ══════════════════════════════════════════════════════
+// AVANZAR TORNEO (cuando un duelo termina)
+// El duelo.html escribe en localStorage quien ganó
+// ══════════════════════════════════════════════════════
+function checkDuelResults() {
+  const ts = getTState();
+  if (!ts || ts.terminado) return;
+
+  const ri = ts.roundActual;
+  const mi = ts.matchActual;
+  const match = ts.bracket[ri]?.[mi];
+  if (!match || match.winner) return;
+
+  const salaId = `t_${T_ID}_r${ri}_m${mi}`;
+  const resultKey = `pvp_game_${salaId}`;
+
+  try {
+    const gameData = JSON.parse(localStorage.getItem(resultKey) || 'null');
+    if (gameData && gameData.terminado && gameData.ganador) {
+      const winner = gameData.ganador === 1 ? match.p1 : match.p2;
+      const loser  = gameData.ganador === 1 ? match.p2 : match.p1;
+
+      // Actualizar match
+      ts.bracket[ri][mi].winner = winner;
+      if (loser) loser.eliminado = true;
+
+      // Propagar ganador a siguiente ronda
+      const nextRi = ri + 1;
+      if (nextRi < ts.bracket.length) {
+        const nextMatchIdx = Math.floor(mi / 2);
+        const isP1Slot = mi % 2 === 0;
+        if (isP1Slot) ts.bracket[nextRi][nextMatchIdx].p1 = winner;
+        else          ts.bracket[nextRi][nextMatchIdx].p2 = winner;
+      }
+
+      // Avanzar al siguiente match o ronda
+      const nextMi = mi + 1;
+      if (nextMi < ts.bracket[ri].length) {
+        ts.matchActual = nextMi;
+        // Si el siguiente tiene BYE
+        const nm = ts.bracket[ri][nextMi];
+        if (nm && (!nm.p1 || !nm.p2)) {
+          nm.winner = nm.p1 || nm.p2;
+          ts.matchActual = 0; // esto se manejará en siguiente check
+        }
+      } else {
+        // Siguiente ronda
+        ts.roundActual = nextRi;
+        ts.matchActual = 0;
+        if (nextRi >= ts.bracket.length) {
+          // TORNEO TERMINADO
+          ts.terminado = true;
+          ts.campeon = winner;
+        }
+      }
+
+      setTState(ts);
+      renderAll();
+
+      // Limpiar resultado del duelo
+      localStorage.removeItem(resultKey);
+    }
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════════════════
+// SYNC
+// ══════════════════════════════════════════════════════
+window.addEventListener('storage', (e) => {
+  if (e.key === T_KEY + '_tick') renderAll();
+  checkDuelResults();
+});
+
+// ══════════════════════════════════════════════════════
+// ARRANQUE
+// ══════════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  renderAll();
+  setInterval(checkDuelResults, 2000);
+});
+</script>
+</body>
+</html>
