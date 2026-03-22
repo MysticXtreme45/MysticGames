@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mystic Creations — Batalla</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Exo+2:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a1a;--panel:#111128;--accent:#7c3aed;--accent2:#a855f7;
+  --red:#ef4444;--green:#22c55e;--gold:#f59e0b;--blue:#3b82f6;
+  --text:#e2e8f0;--dim:#64748b;
+}
+body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;
+  min-height:100vh;overflow-x:hidden}
+
+/* STARS BG */
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse at 20% 50%,#1e1b4b22 0%,transparent 60%),
+             radial-gradient(ellipse at 80% 20%,#4c1d9522 0%,transparent 60%);
+  pointer-events:none}
+
+h1.title{font-family:'Cinzel Decorative',serif;text-align:center;
+  font-size:clamp(1.2rem,3vw,2rem);
+  background:linear-gradient(135deg,#a855f7,#f59e0b,#a855f7);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  padding:1rem;letter-spacing:2px;text-shadow:none}
+
+/* SETUP SCREEN */
+#setup{max-width:480px;margin:2rem auto;padding:1.5rem;
+  background:var(--panel);border-radius:16px;
+  border:1px solid #7c3aed44;text-align:center}
+#setup h2{font-family:'Cinzel Decorative',serif;color:var(--accent2);margin-bottom:1.2rem;font-size:1.1rem}
+.form-group{margin-bottom:1rem;text-align:left}
+.form-group label{display:block;font-size:.8rem;color:var(--dim);margin-bottom:.4rem;letter-spacing:1px;text-transform:uppercase}
+.form-group input,.form-group select{width:100%;padding:.6rem 1rem;
+  background:#1e1e3a;border:1px solid #7c3aed55;border-radius:8px;
+  color:var(--text);font-family:'Exo 2',sans-serif;font-size:.95rem;outline:none}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent2)}
+.btn-start{width:100%;padding:.9rem;margin-top:.5rem;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border:none;border-radius:10px;color:#fff;font-family:'Cinzel Decorative',serif;
+  font-size:1rem;cursor:pointer;letter-spacing:1px;
+  transition:transform .15s,box-shadow .15s}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 8px 24px #7c3aed55}
+
+/* ARENA */
+#arena{display:none;max-width:900px;margin:0 auto;padding:1rem}
+
+/* HP BARS */
+.fighters-hud{display:grid;grid-template-columns:1fr auto 1fr;gap:1rem;
+  align-items:center;margin-bottom:1.5rem}
+.fighter-hud{background:var(--panel);border-radius:12px;padding:.8rem 1rem;
+  border:1px solid #ffffff11}
+.fighter-hud.player{border-color:#7c3aed44}
+.fighter-hud.enemy{border-color:#ef444444}
+.fighter-name{font-weight:800;font-size:.95rem;margin-bottom:.3rem;
+  display:flex;align-items:center;gap:.4rem}
+.fighter-weapon{font-size:.75rem;color:var(--dim);margin-bottom:.5rem}
+.hp-bar-wrap{background:#1e1e3a;border-radius:999px;height:10px;overflow:hidden}
+.hp-bar{height:100%;border-radius:999px;transition:width .4s ease;
+  background:linear-gradient(90deg,#22c55e,#86efac)}
+.hp-bar.low{background:linear-gradient(90deg,#ef4444,#fca5a5)}
+.hp-bar.mid{background:linear-gradient(90deg,#f59e0b,#fcd34d)}
+.hp-text{font-size:.75rem;color:var(--dim);margin-top:.25rem;text-align:right}
+.vs-badge{font-family:'Cinzel Decorative',serif;font-size:1.4rem;
+  color:var(--gold);text-align:center;text-shadow:0 0 20px #f59e0b88}
+
+/* SCENE 2D */
+.scene{position:relative;height:280px;background:linear-gradient(180deg,#0d0d2b 0%,#1a0a3d 40%,#2d1a00 100%);
+  border-radius:16px;overflow:hidden;border:1px solid #ffffff0a;margin-bottom:1rem}
+
+/* Ground */
+.scene::after{content:'';position:absolute;bottom:0;left:0;right:0;height:60px;
+  background:linear-gradient(180deg,#3d2200 0%,#1a0f00 100%);
+  border-top:2px solid #f59e0b44}
+
+/* Sky stars */
+.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle 2s infinite alternate}
+@keyframes twinkle{from{opacity:.3}to{opacity:1}}
+
+/* Characters */
+.char{position:absolute;bottom:60px;display:flex;flex-direction:column;
+  align-items:center;gap:4px;transition:transform .15s}
+.char-sprite{font-size:3.5rem;line-height:1;filter:drop-shadow(0 4px 8px #00000088)}
+.char-name-tag{font-size:.65rem;font-weight:700;color:#fff;
+  background:#00000066;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.char-weapon-tag{font-size:.6rem;color:var(--gold);white-space:nowrap}
+
+#player-char{left:8%}
+#enemy-char{right:8%}
+
+/* Attack animations */
+@keyframes attackRight{0%{transform:translateX(0)}50%{transform:translateX(60px)}100%{transform:translateX(0)}}
+@keyframes attackLeft{0%{transform:translateX(0)}50%{transform:translateX(-60px)}100%{transform:translateX(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+@keyframes hitFlash{0%,100%{filter:drop-shadow(0 4px 8px #00000088)}50%{filter:drop-shadow(0 0 20px #ef4444) brightness(2)}}
+@keyframes dodge{0%,100%{transform:translateY(0)}50%{transform:translateY(-30px)}}
+@keyframes critical{0%{transform:scale(1)}50%{transform:scale(1.3) rotate(-5deg)}100%{transform:scale(1)}}
+
+.attacking-right .char-sprite{animation:attackRight .4s ease}
+.attacking-left .char-sprite{animation:attackLeft .4s ease}
+.taking-hit .char-sprite{animation:shake .3s ease,hitFlash .3s ease}
+.dodging .char-sprite{animation:dodge .4s ease}
+.critical-hit .char-sprite{animation:critical .3s ease}
+
+/* Damage numbers */
+.dmg-number{position:absolute;font-family:'Cinzel Decorative',serif;
+  font-size:1.8rem;font-weight:700;pointer-events:none;
+  animation:floatUp .9s ease forwards}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}
+  50%{transform:translateY(-40px) scale(1.2)}
+  100%{opacity:0;transform:translateY(-80px) scale(.8)}}
+.dmg-number.player-dmg{color:#ef4444;text-shadow:0 0 10px #ef444488;right:28%}
+.dmg-number.enemy-dmg{color:#22c55e;text-shadow:0 0 10px #22c55e88;left:28%}
+.dmg-number.crit{color:#f59e0b;font-size:2.4rem}
+.dmg-number.heal{color:#a78bfa}
+
+/* Effect particles */
+.particle{position:absolute;width:6px;height:6px;border-radius:50%;
+  pointer-events:none;animation:particle .6s ease forwards}
+@keyframes particle{0%{opacity:1;transform:translate(0,0) scale(1)}
+  100%{opacity:0;transform:var(--tx,50px) var(--ty,-80px) scale(0)}}
+
+/* Turn indicator */
+.turn-indicator{text-align:center;font-size:.85rem;color:var(--dim);
+  margin-bottom:.5rem;letter-spacing:1px}
+.turn-indicator span{color:var(--accent2);font-weight:700}
+
+/* Battle log */
+.battle-log{background:#0d0d1f;border:1px solid #ffffff0a;border-radius:10px;
+  height:90px;overflow-y:auto;padding:.6rem .8rem;margin-bottom:.8rem;
+  font-size:.8rem;line-height:1.6;scroll-behavior:smooth}
+.log-line{color:var(--dim);border-bottom:1px solid #ffffff05;padding:.15rem 0}
+.log-line.player-action{color:#a78bfa}
+.log-line.enemy-action{color:#f87171}
+.log-line.crit-line{color:var(--gold);font-weight:700}
+.log-line.heal-line{color:#86efac}
+.log-line.system{color:var(--dim);font-style:italic}
+
+/* ACTION BUTTONS */
+.actions{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;margin-bottom:.8rem}
+@media(min-width:500px){.actions{grid-template-columns:repeat(4,1fr)}}
+.action-btn{padding:.7rem .5rem;border:none;border-radius:10px;
+  font-family:'Exo 2',sans-serif;font-size:.8rem;font-weight:700;
+  cursor:pointer;transition:all .15s;position:relative;overflow:hidden;
+  letter-spacing:.5px;text-transform:uppercase}
+.action-btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+.action-btn::after{content:'';position:absolute;inset:0;background:#fff;
+  opacity:0;transition:opacity .1s}
+.action-btn:active:not(:disabled)::after{opacity:.15}
+.btn-attack{background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;box-shadow:0 4px 12px #3b82f633}
+.btn-attack:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 18px #3b82f655}
+.btn-laser{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;box-shadow:0 4px 12px #7c3aed33}
+.btn-laser:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 18px #7c3aed55}
+.btn-mystic{background:linear-gradient(135deg,#b91c1c,#ef4444);color:#fff;box-shadow:0 4px 12px #ef444433}
+.btn-mystic:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 18px #ef444455}
+.btn-heal{background:linear-gradient(135deg,#065f46,#22c55e);color:#fff;box-shadow:0 4px 12px #22c55e33}
+.btn-heal:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 18px #22c55e55}
+.btn-shield{background:linear-gradient(135deg,#92400e,#f59e0b);color:#fff;box-shadow:0 4px 12px #f59e0b33}
+.btn-shield:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 18px #f59e0b55}
+
+.status-tags{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.6rem;min-height:24px}
+.status-tag{padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:700}
+.tag-burn{background:#7f1d1d;color:#fca5a5}
+.tag-frozen{background:#1e3a5f;color:#93c5fd}
+.tag-poison{background:#14532d11;color:#86efac;border:1px solid #22c55e44}
+.tag-shield{background:#78350f22;color:#fcd34d;border:1px solid #f59e0b44}
+
+/* Result overlay */
+#result-overlay{display:none;position:fixed;inset:0;
+  background:#000000cc;z-index:100;
+  align-items:center;justify-content:center;flex-direction:column;gap:1rem}
+#result-overlay.show{display:flex}
+.result-box{background:var(--panel);border-radius:20px;padding:2rem 3rem;
+  text-align:center;border:2px solid var(--accent);
+  animation:popIn .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+.result-title{font-family:'Cinzel Decorative',serif;font-size:2rem;margin-bottom:.5rem}
+.result-win{color:var(--gold)}
+.result-lose{color:var(--red)}
+.result-stats{color:var(--dim);font-size:.9rem;margin-bottom:1.2rem}
+.btn-replay{padding:.8rem 2rem;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border:none;border-radius:10px;color:#fff;font-family:'Cinzel Decorative',serif;
+  font-size:1rem;cursor:pointer;letter-spacing:1px;
+  transition:transform .15s}
+.btn-replay:hover{transform:scale(1.05)}
+</style>
+</head>
+<body>
+
+<h1 class="title">⚔️ Mystic Creations — Batalla</h1>
+
+<!-- SETUP -->
+<div id="setup">
+  <h2>⚙️ Configurar Batalla</h2>
+  <div class="form-group">
+    <label>Tu nombre de jugador</label>
+    <input type="text" id="player-name" placeholder="Nombre..." maxlength="16" value="Guerrero">
+  </div>
+  <div class="form-group">
+    <label>Tu arma equipada</label>
+    <select id="player-weapon">
+      <option value="Pistola de Agua|0|0">🔫 Pistola de Agua (+0 daño)</option>
+      <option value="Láser Neón|12|5">⚡ Láser Neón (+12 daño)</option>
+      <option value="Arco Eléctrico|18|8">🏹 Arco Eléctrico (+18 daño)</option>
+      <option value="Cañón Místico|28|10">💥 Cañón Místico (+28 daño)</option>
+      <option value="Espada Plasma|35|12">🗡️ Espada Plasma (+35 daño)</option>
+      <option value="Rifle Cuántico|45|15" selected>🎯 Rifle Cuántico (+45 daño)</option>
+      <option value="Bastón del Vacío|55|20">🪄 Bastón del Vacío (+55 daño)</option>
+      <option value="Guantelete Cósmico|70|25">🌌 Guantelete Cósmico (+70 daño)</option>
+      <option value="Espada del Dueño|999|100">👑 Espada del Dueño (∞ daño)</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label>Nivel del jugador</label>
+    <input type="number" id="player-level" min="1" max="50" value="5">
+  </div>
+  <button class="btn-start" onclick="startBattle()">⚔️ ¡COMENZAR BATALLA!</button>
+</div>
+
+<!-- ARENA -->
+<div id="arena">
+  <div class="fighters-hud">
+    <div class="fighter-hud player">
+      <div class="fighter-name">🧙 <span id="hud-pname">Guerrero</span></div>
+      <div class="fighter-weapon" id="hud-pweapon">Rifle Cuántico</div>
+      <div class="hp-bar-wrap"><div class="hp-bar" id="hp-bar-player" style="width:100%"></div></div>
+      <div class="hp-text"><span id="hp-player-cur">100</span> / <span id="hp-player-max">100</span> HP</div>
+    </div>
+    <div class="vs-badge">VS</div>
+    <div class="fighter-hud enemy">
+      <div class="fighter-name">🤖 <span id="hud-ename">Bot Enemigo</span></div>
+      <div class="fighter-weapon" id="hud-eweapon">Nivel 5</div>
+      <div class="hp-bar-wrap"><div class="hp-bar" id="hp-bar-enemy" style="width:100%"></div></div>
+      <div class="hp-text"><span id="hp-enemy-cur">200</span> / <span id="hp-enemy-max">200</span> HP</div>
+    </div>
+  </div>
+
+  <!-- SCENE -->
+  <div class="scene" id="scene">
+    <!-- Stars -->
+    <div class="star" style="width:2px;height:2px;top:10%;left:15%;animation-delay:.3s"></div>
+    <div class="star" style="width:3px;height:3px;top:20%;left:40%;animation-delay:.8s"></div>
+    <div class="star" style="width:2px;height:2px;top:8%;left:65%;animation-delay:.1s"></div>
+    <div class="star" style="width:2px;height:2px;top:30%;left:80%;animation-delay:1s"></div>
+    <div class="star" style="width:3px;height:3px;top:15%;left:90%;animation-delay:.5s"></div>
+    <div class="star" style="width:2px;height:2px;top:25%;left:5%;animation-delay:.7s"></div>
+
+    <!-- Player -->
+    <div class="char" id="player-char">
+      <div class="char-sprite" id="player-sprite">🧙</div>
+      <div class="char-name-tag" id="char-pname">Guerrero</div>
+      <div class="char-weapon-tag" id="char-pweapon">🎯 Rifle Cuántico</div>
+    </div>
+
+    <!-- Enemy -->
+    <div class="char" id="enemy-char">
+      <div class="char-sprite" id="enemy-sprite">🤖</div>
+      <div class="char-name-tag">Bot Enemigo</div>
+      <div class="char-weapon-tag" id="char-elevel">⚡ Lv.5</div>
+    </div>
+  </div>
+
+  <div class="turn-indicator">Turno <span id="turn-num">1</span> — <span id="turn-who">Tu turno</span></div>
+
+  <div class="status-tags" id="status-tags"></div>
+
+  <div class="battle-log" id="battle-log">
+    <div class="log-line system">⚔️ ¡La batalla ha comenzado! Elige tu ataque...</div>
+  </div>
+
+  <div class="actions">
+    <button class="action-btn btn-attack" onclick="playerAction('attack')">🔫 Disparar</button>
+    <button class="action-btn btn-laser" onclick="playerAction('laser')">⚡ Láser</button>
+    <button class="action-btn btn-mystic" id="btn-mystic" onclick="playerAction('mystic')">🔮 Místico</button>
+    <button class="action-btn btn-heal" id="btn-heal" onclick="playerAction('heal')">✨ Curar</button>
+    <button class="action-btn btn-shield" id="btn-shield" onclick="playerAction('shield')">🛡️ Escudo</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="result-overlay">
+  <div class="result-box">
+    <div class="result-title" id="result-title">🏆 ¡VICTORIA!</div>
+    <div class="result-stats" id="result-stats"></div>
+    <button class="btn-replay" onclick="resetGame()">⚔️ Jugar de nuevo</button>
+  </div>
+</div>
+
+<script>
+// ============================
+// GAME STATE
+// ============================
+const WEAPONS = {
+  "Pistola de Agua":    {emoji:"🔫", bonus:0,   crit:0},
+  "Láser Neón":         {emoji:"⚡", bonus:12,  crit:5},
+  "Arco Eléctrico":     {emoji:"🏹", bonus:18,  crit:8},
+  "Cañón Místico":      {emoji:"💥", bonus:28,  crit:10},
+  "Espada Plasma":      {emoji:"🗡️", bonus:35,  crit:12},
+  "Rifle Cuántico":     {emoji:"🎯", bonus:45,  crit:15},
+  "Bastón del Vacío":   {emoji:"🪄", bonus:55,  crit:20},
+  "Guantelete Cósmico": {emoji:"🌌", bonus:70,  crit:25},
+  "Espada del Dueño":   {emoji:"👑", bonus:999, crit:100},
+};
+
+const WEAPON_SPRITES = {
+  "Pistola de Agua":"🧙","Láser Neón":"🧙‍♂️","Arco Eléctrico":"🏹",
+  "Cañón Místico":"🔮","Espada Plasma":"⚔️","Rifle Cuántico":"🎯",
+  "Bastón del Vacío":"🪄","Guantelete Cósmico":"🌌","Espada del Dueño":"👑"
+};
+
+let G = {};
+
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+
+function startBattle(){
+  const nameEl   = document.getElementById('player-name');
+  const weapSel  = document.getElementById('player-weapon');
+  const levelEl  = document.getElementById('player-level');
+  const parts    = weapSel.value.split('|');
+  const weapName = parts[0];
+  const weapBonus= parseInt(parts[1]);
+  const weapCrit = parseInt(parts[2]);
+  const nivel    = Math.max(1, Math.min(50, parseInt(levelEl.value)||5));
+  const pname    = nameEl.value.trim() || 'Guerrero';
+
+  G = {
+    pname, weapName, weapBonus, weapCrit, nivel,
+    pHP: 100, pMaxHP: 100,
+    eHP: 100 + nivel*20, eMaxHP: 100 + nivel*20,
+    turn: 1,
+    mysticUsed: false, healUsed: false, shieldActive: false,
+    playerTurn: true, busy: false,
+    dmgDealt: 0, dmgTaken: 0,
+  };
+
+  // UI setup
+  document.getElementById('setup').style.display='none';
+  document.getElementById('arena').style.display='block';
+  document.getElementById('hud-pname').textContent=pname;
+  document.getElementById('hud-pweapon').textContent=weapName;
+  document.getElementById('hud-ename').textContent='Bot Enemigo';
+  document.getElementById('hud-eweapon').textContent='Nivel '+nivel;
+  document.getElementById('hp-player-cur').textContent=G.pHP;
+  document.getElementById('hp-player-max').textContent=G.pMaxHP;
+  document.getElementById('hp-enemy-cur').textContent=G.eHP;
+  document.getElementById('hp-enemy-max').textContent=G.eMaxHP;
+  document.getElementById('char-pname').textContent=pname;
+  document.getElementById('char-pweapon').textContent=
+    (WEAPONS[weapName]?.emoji||'🔫')+' '+weapName;
+  document.getElementById('char-elevel').textContent='⚡ Lv.'+nivel;
+  document.getElementById('player-sprite').textContent=
+    WEAPON_SPRITES[weapName]||'🧙';
+  updateHPBars();
+  clearLog();
+  addLog('system','⚔️ ¡La batalla ha comenzado! Nivel del bot: '+nivel);
+
+  // Start bot auto-attack loop
+  G.botTimer = setInterval(botAutoAttack, 7000);
+}
+
+function updateHPBars(){
+  const pb=document.getElementById('hp-bar-player');
+  const eb=document.getElementById('hp-bar-enemy');
+  const pPct=Math.max(0,(G.pHP/G.pMaxHP)*100);
+  const ePct=Math.max(0,(G.eHP/G.eMaxHP)*100);
+  pb.style.width=pPct+'%';
+  eb.style.width=ePct+'%';
+  pb.className='hp-bar'+(pPct<25?' low':pPct<50?' mid':'');
+  eb.className='hp-bar'+(ePct<25?' low':ePct<50?' mid':'');
+  document.getElementById('hp-player-cur').textContent=Math.max(0,G.pHP);
+  document.getElementById('hp-enemy-cur').textContent=Math.max(0,G.eHP);
+}
+
+function addLog(type, msg){
+  const log=document.getElementById('battle-log');
+  const div=document.createElement('div');
+  div.className='log-line '+type+'-line';
+  div.textContent=msg;
+  log.appendChild(div);
+  log.scrollTop=log.scrollHeight;
+}
+function clearLog(){
+  document.getElementById('battle-log').innerHTML='';
+}
+
+function spawnDamage(amount, side, isCrit){
+  const scene=document.getElementById('scene');
+  const el=document.createElement('div');
+  el.className='dmg-number '+(side==='enemy'?'enemy-dmg':'player-dmg')+(isCrit?' crit':'');
+  el.textContent=(isCrit?'💥 ':'')+(amount>0?'-'+amount:'+'+Math.abs(amount));
+  el.style.top=rand(30,60)+'%';
+  scene.appendChild(el);
+  setTimeout(()=>el.remove(),900);
+}
+
+function animateChar(id, anim){
+  const el=document.getElementById(id);
+  el.classList.remove('attacking-right','attacking-left','taking-hit','dodging','critical-hit');
+  void el.offsetWidth;
+  el.classList.add(anim);
+  setTimeout(()=>el.classList.remove(anim),500);
+}
+
+function calcDamage(base_min, base_max){
+  const dmg=rand(base_min,base_max)+G.weapBonus;
+  const isCrit=rand(1,100)<=G.weapCrit;
+  return {dmg: isCrit?Math.floor(dmg*2):dmg, isCrit};
+}
+
+function setButtons(enabled){
+  document.querySelectorAll('.action-btn').forEach(b=>{
+    if(!b.id||(!b.id.includes('mystic')||!G.mysticUsed)&&(!b.id.includes('heal')||!G.healUsed))
+      b.disabled=!enabled;
+  });
+  if(G.mysticUsed) document.getElementById('btn-mystic').disabled=true;
+  if(G.healUsed) document.getElementById('btn-heal').disabled=true;
+}
+
+async function playerAction(type){
+  if(G.busy||!G.playerTurn) return;
+  G.busy=true;
+  setButtons(false);
+
+  let dmg=0, isCrit=false, msg='';
+
+  if(type==='attack'){
+    ({dmg,isCrit}=calcDamage(15,28));
+    G.eHP-=dmg; G.dmgDealt+=dmg;
+    animateChar('player-char','attacking-right');
+    await sleep(200);
+    animateChar('enemy-char','taking-hit');
+    spawnDamage(dmg,'enemy',isCrit);
+    msg=isCrit?'💥 ¡CRÍTICO! Disparas '+dmg+' daño al bot!':'🔫 Disparas y haces '+dmg+' daño.';
+    addLog('player-action',msg);
+  }
+  else if(type==='laser'){
+    dmg=25+G.weapBonus;
+    isCrit=rand(1,100)<=G.weapCrit;
+    if(isCrit) dmg=Math.floor(dmg*2);
+    G.eHP-=dmg; G.dmgDealt+=dmg;
+    animateChar('player-char','attacking-right');
+    await sleep(200);
+    animateChar('enemy-char',isCrit?'critical-hit':'taking-hit');
+    spawnDamage(dmg,'enemy',isCrit);
+    msg=isCrit?'⚡💥 ¡LÁSER CRÍTICO! '+dmg+' daño masivo!':'⚡ Ataque láser: '+dmg+' daño.';
+    addLog('player-action',msg);
+  }
+  else if(type==='mystic'){
+    if(G.mysticUsed){G.busy=false;setButtons(true);return;}
+    G.mysticUsed=true;
+    document.getElementById('btn-mystic').disabled=true;
+    const hit=rand(1,100)>40;
+    if(hit){
+      dmg=rand(55,90)+G.weapBonus;
+      isCrit=rand(1,100)<=G.weapCrit;
+      if(isCrit) dmg=Math.floor(dmg*2);
+      G.eHP-=dmg; G.dmgDealt+=dmg;
+      animateChar('player-char','attacking-right');
+      await sleep(200);
+      animateChar('enemy-char','critical-hit');
+      spawnDamage(dmg,'enemy',isCrit);
+      msg='🔮'+(isCrit?' ¡MÍSTICO CRÍTICO!':' Ataque místico:')+' '+dmg+' daño!';
+    } else {
+      animateChar('player-char','attacking-right');
+      msg='🔮 El ataque místico falló... 😤';
+    }
+    addLog('player-action',msg);
+  }
+  else if(type==='heal'){
+    if(G.healUsed){G.busy=false;setButtons(true);return;}
+    G.healUsed=true;
+    document.getElementById('btn-heal').disabled=true;
+    const cura=rand(25,45);
+    G.pHP=Math.min(G.pMaxHP,G.pHP+cura);
+    animateChar('player-char','dodging');
+    spawnDamage(-cura,'player',false);
+    addLog('heal','✨ Te curaste '+cura+' HP. Vida: '+G.pHP+'/'+G.pMaxHP);
+  }
+  else if(type==='shield'){
+    G.shieldActive=true;
+    document.getElementById('btn-shield').disabled=true;
+    animateChar('player-char','dodging');
+    updateStatusTags();
+    addLog('player-action','🛡️ Escudo activado. Absorberá el 50% del próximo ataque.');
+    G.busy=false; setButtons(true); return;
+  }
+
+  updateHPBars();
+  if(G.eHP<=0){endGame(true); return;}
+
+  // Bot counter
+  await sleep(600);
+  await botAttack();
+
+  G.turn++;
+  G.playerTurn=true;
+  G.busy=false;
+  document.getElementById('turn-num').textContent=G.turn;
+  document.getElementById('turn-who').textContent='Tu turno';
+  setButtons(true);
+}
+
+async function botAttack(){
+  const nivel=G.nivel;
+  let bdmg=rand(8,18)+(nivel>>1);
+  if(G.shieldActive){
+    bdmg=Math.max(1,Math.floor(bdmg/2));
+    G.shieldActive=false;
+    updateStatusTags();
+    addLog('system','🛡️ El escudo absorbió la mitad del daño.');
+  }
+  G.pHP-=bdmg; G.dmgTaken+=bdmg;
+  animateChar('enemy-char','attacking-left');
+  await sleep(200);
+  animateChar('player-char','taking-hit');
+  spawnDamage(bdmg,'player',false);
+  addLog('enemy-action','🤖 El bot atacó y te hizo '+bdmg+' daño.');
+  updateHPBars();
+  if(G.pHP<=0){endGame(false);}
+}
+
+async function botAutoAttack(){
+  if(!G||G.busy||G.playerTurn===false) return;
+  if(G.eHP<=0||G.pHP<=0) return;
+  // Occasional effect message
+  if(rand(1,100)<20){
+    addLog('enemy-action','⚠️ ¡El bot prepara un ataque especial!');
+  }
+  G.busy=true;
+  G.playerTurn=false;
+  setButtons(false);
+  document.getElementById('turn-who').textContent='Turno del bot';
+  await sleep(400);
+  await botAttack();
+  if(G.pHP>0){
+    G.playerTurn=true;
+    G.busy=false;
+    document.getElementById('turn-who').textContent='Tu turno';
+    setButtons(true);
+  }
+}
+
+function updateStatusTags(){
+  const wrap=document.getElementById('status-tags');
+  wrap.innerHTML='';
+  if(G.shieldActive){
+    const t=document.createElement('span');
+    t.className='status-tag tag-shield';
+    t.textContent='🛡️ Escudo activo';
+    wrap.appendChild(t);
+  }
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+function endGame(win){
+  clearInterval(G.botTimer);
+  G.busy=true;
+  setButtons(false);
+  const overlay=document.getElementById('result-overlay');
+  const title=document.getElementById('result-title');
+  const stats=document.getElementById('result-stats');
+  overlay.classList.add('show');
+  if(win){
+    title.textContent='🏆 ¡VICTORIA ÉPICA!';
+    title.className='result-title result-win';
+    stats.textContent='Daño infligido: '+G.dmgDealt+' | Daño recibido: '+G.dmgTaken+' | Turnos: '+G.turn;
+  } else {
+    title.textContent='💀 ¡DERROTA!';
+    title.className='result-title result-lose';
+    stats.textContent='Resististe '+G.turn+' turnos | Daño infligido: '+G.dmgDealt;
+  }
+}
+
+function resetGame(){
+  clearInterval(G?.botTimer);
+  document.getElementById('result-overlay').classList.remove('show');
+  document.getElementById('arena').style.display='none';
+  document.getElementById('setup').style.display='block';
+  document.getElementById('battle-log').innerHTML='';
+  document.getElementById('status-tags').innerHTML='';
+}
+</script>
+</body>
+</html>
