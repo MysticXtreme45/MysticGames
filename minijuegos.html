@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mystic Creations — Minijuegos</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Exo+2:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#080812;--panel:#0f0f20;--accent:#a855f7;--gold:#f59e0b;--red:#ef4444;--green:#22c55e;--blue:#3b82f6;--text:#e2e8f0;--dim:#64748b}
+body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;min-height:100vh;padding-bottom:2rem}
+h1.title{font-family:'Cinzel Decorative',serif;text-align:center;font-size:clamp(1.1rem,2.5vw,1.8rem);background:linear-gradient(135deg,#a855f7,#f59e0b,#22c55e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;padding:1rem;letter-spacing:2px}
+
+.tabs{display:flex;gap:.5rem;max-width:700px;margin:0 auto 1.5rem;padding:0 1rem;flex-wrap:wrap;justify-content:center}
+.tab{padding:.5rem 1.2rem;border:1px solid #ffffff22;border-radius:999px;background:transparent;color:var(--dim);font-family:'Exo 2',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.5px}
+.tab.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 4px 12px #a855f744}
+.tab:hover:not(.active){border-color:var(--accent);color:var(--accent)}
+
+.game-section{display:none;max-width:600px;margin:0 auto;padding:0 1rem}
+.game-section.active{display:block}
+
+.card{background:var(--panel);border-radius:16px;padding:1.5rem;border:1px solid #ffffff0a;margin-bottom:1rem}
+
+/* TRIVIA */
+.q-text{font-size:1.1rem;font-weight:700;margin-bottom:1.2rem;line-height:1.5;text-align:center;min-height:60px}
+.reward-badge{display:inline-block;background:#f59e0b22;color:var(--gold);padding:4px 12px;border-radius:999px;font-size:.8rem;font-weight:700;margin-bottom:1rem}
+.options-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.opt-btn{padding:.8rem 1rem;border:2px solid #ffffff11;border-radius:10px;background:#1a1a2e;color:var(--text);font-family:'Exo 2',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s;text-align:left}
+.opt-btn:hover:not(:disabled){border-color:var(--accent);background:#2a1a4e;transform:translateY(-1px)}
+.opt-btn.correct{border-color:var(--green)!important;background:#22c55e22!important;color:var(--green)!important}
+.opt-btn.wrong{border-color:var(--red)!important;background:#ef444422!important;color:var(--red)!important}
+.opt-btn:disabled{cursor:not-allowed;opacity:.7}
+.trivia-result{text-align:center;padding:1rem;font-size:1.1rem;font-weight:700;min-height:40px}
+.timer-bar-wrap{background:#1a1a2e;border-radius:999px;height:6px;margin-bottom:1rem;overflow:hidden}
+.timer-bar{height:100%;background:linear-gradient(90deg,var(--green),var(--gold));border-radius:999px;transition:width .1s linear}
+.score-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.score-val{font-family:'Cinzel Decorative',serif;font-size:1.3rem;color:var(--gold)}
+
+/* DADOS */
+.dice-area{display:flex;justify-content:center;gap:1rem;margin:1.5rem 0}
+.die{width:80px;height:80px;background:#1a1a2e;border:3px solid #a855f744;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:3rem;transition:transform .3s;cursor:default}
+.die.rolling{animation:rollDice .5s ease infinite alternate}
+@keyframes rollDice{from{transform:rotate(-10deg) scale(.9)}to{transform:rotate(10deg) scale(1.1)}}
+.die.highlight{border-color:var(--gold);box-shadow:0 0 20px #f59e0b55}
+.num-selector{display:grid;grid-template-columns:repeat(6,1fr);gap:.4rem;margin-bottom:1rem}
+.num-btn{padding:.6rem;border:2px solid #ffffff11;border-radius:8px;background:#1a1a2e;color:var(--dim);font-weight:800;font-size:1rem;cursor:pointer;transition:all .2s}
+.num-btn:hover{border-color:var(--accent);color:var(--accent)}
+.num-btn.selected{border-color:var(--gold);background:#f59e0b22;color:var(--gold)}
+.bet-input{width:100%;padding:.6rem 1rem;background:#1a1a2e;border:1px solid #a855f733;border-radius:8px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:.95rem;outline:none;margin-bottom:.8rem}
+.btn-roll{width:100%;padding:.9rem;background:linear-gradient(135deg,var(--accent),#7c3aed);border:none;border-radius:10px;color:#fff;font-family:'Cinzel Decorative',serif;font-size:1rem;cursor:pointer;letter-spacing:1px;transition:all .2s}
+.btn-roll:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 20px #a855f744}
+.btn-roll:disabled{opacity:.4;cursor:not-allowed}
+.dice-result{text-align:center;font-size:1rem;font-weight:700;min-height:36px;padding:.5rem}
+.pts-display{text-align:center;margin-bottom:.8rem}
+.pts-label{font-size:.75rem;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.pts-val{font-family:'Cinzel Decorative',serif;font-size:1.5rem;color:var(--gold)}
+
+/* BLACKJACK */
+.bj-table{background:linear-gradient(135deg,#0a2a0a,#0f3a0f);border-radius:16px;padding:1.5rem;border:3px solid #22c55e44;margin-bottom:1rem}
+.bj-section-label{font-size:.7rem;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:.5rem}
+.cards-row{display:flex;gap:.5rem;flex-wrap:wrap;min-height:80px;align-items:center;margin-bottom:.5rem}
+.playing-card{width:55px;height:80px;background:#fff;border-radius:8px;border:1px solid #00000022;display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:1rem;font-weight:900;color:#111;box-shadow:2px 4px 8px #00000055;transition:transform .2s}
+.playing-card.red{color:#dc2626}
+.playing-card.back{background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:transparent;font-size:1.5rem}
+.playing-card span{font-size:.65rem;font-weight:600}
+.playing-card:hover{transform:translateY(-4px)}
+.bj-score{font-size:.85rem;color:var(--dim);margin-bottom:.8rem}
+.bj-score strong{color:var(--text)}
+.bj-actions{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.8rem}
+.bj-btn{padding:.75rem;border:none;border-radius:10px;font-family:'Exo 2',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .15s;letter-spacing:.5px;text-transform:uppercase}
+.bj-btn:disabled{opacity:.35;cursor:not-allowed}
+.bj-hit{background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff}
+.bj-stand{background:linear-gradient(135deg,#b91c1c,#ef4444);color:#fff}
+.bj-btn:hover:not(:disabled){transform:translateY(-2px)}
+.bj-result{text-align:center;font-size:1.1rem;font-weight:700;min-height:36px;padding:.5rem;border-radius:8px}
+.bj-win{background:#22c55e22;color:var(--green)}
+.bj-lose{background:#ef444422;color:var(--red)}
+.bj-push{background:#f59e0b22;color:var(--gold)}
+.bj-deal-row{display:flex;gap:.7rem}
+.bj-deal-row input{flex:1;padding:.65rem 1rem;background:#1a1a2e;border:1px solid #22c55e33;border-radius:8px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:.9rem;outline:none}
+.bj-deal-btn{padding:.65rem 1.5rem;background:linear-gradient(135deg,#065f46,#22c55e);border:none;border-radius:8px;color:#fff;font-family:'Cinzel Decorative',serif;font-size:.85rem;cursor:pointer;transition:all .2s;white-space:nowrap}
+.bj-deal-btn:hover{transform:translateY(-1px)}
+
+.points-banner{background:linear-gradient(135deg,#f59e0b22,#a855f722);border:1px solid #f59e0b33;border-radius:12px;padding:.8rem 1.2rem;display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.pb-label{font-size:.75rem;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.pb-val{font-family:'Cinzel Decorative',serif;font-size:1.4rem;color:var(--gold)}
+.btn-new{padding:.4rem 1rem;background:var(--accent);border:none;border-radius:999px;color:#fff;font-size:.75rem;font-weight:700;cursor:pointer;transition:all .15s}
+.btn-new:hover{background:#7c3aed}
+</style>
+</head>
+<body>
+<h1 class="title">🎮 Mystic Creations — Minijuegos</h1>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('trivia')">🧠 Trivia</button>
+  <button class="tab" onclick="showTab('dados')">🎲 Dados</button>
+  <button class="tab" onclick="showTab('blackjack')">🃏 Blackjack</button>
+</div>
+
+<!-- POINTS BANNER -->
+<div class="points-banner" style="max-width:600px;margin:0 auto 1rem;padding:0 1rem">
+  <div><div class="pb-label">Tus puntos</div><div class="pb-val" id="global-pts">1000</div></div>
+  <button class="btn-new" onclick="resetPoints()">↺ Reiniciar pts</button>
+</div>
+
+<!-- TRIVIA -->
+<div class="game-section active" id="tab-trivia">
+  <div class="card">
+    <div class="score-row">
+      <div><div style="font-size:.75rem;color:var(--dim);text-transform:uppercase;letter-spacing:1px">Racha</div>
+        <div class="score-val" id="trivia-streak">0 🔥</div></div>
+      <div style="text-align:right"><div style="font-size:.75rem;color:var(--dim);text-transform:uppercase;letter-spacing:1px">Acertadas</div>
+        <div class="score-val" id="trivia-correct">0/0</div></div>
+    </div>
+    <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar" style="width:100%"></div></div>
+    <div class="reward-badge" id="trivia-reward">💰 Premio: 150 pts</div>
+    <div class="q-text" id="q-text">Cargando pregunta...</div>
+    <div class="options-grid" id="options-grid"></div>
+    <div class="trivia-result" id="trivia-result"></div>
+    <button class="btn-roll" id="next-btn" onclick="nextQuestion()" style="display:none;margin-top:.8rem">➡️ Siguiente pregunta</button>
+  </div>
+</div>
+
+<!-- DADOS -->
+<div class="game-section" id="tab-dados">
+  <div class="card">
+    <div class="pts-display">
+      <div class="pts-label">Elige un número (pagas x5 si aciertas)</div>
+    </div>
+    <div class="num-selector" id="num-selector">
+      <button class="num-btn" onclick="selectNum(1)">1</button>
+      <button class="num-btn" onclick="selectNum(2)">2</button>
+      <button class="num-btn" onclick="selectNum(3)">3</button>
+      <button class="num-btn" onclick="selectNum(4)">4</button>
+      <button class="num-btn" onclick="selectNum(5)">5</button>
+      <button class="num-btn" onclick="selectNum(6)">6</button>
+    </div>
+    <input class="bet-input" id="dice-bet" type="number" min="10" max="10000" value="100" placeholder="Apuesta...">
+    <div class="dice-area">
+      <div class="die" id="die1">🎲</div>
+    </div>
+    <div class="dice-result" id="dice-result"></div>
+    <button class="btn-roll" id="roll-btn" onclick="rollDice()">🎲 ¡LANZAR DADO!</button>
+  </div>
+</div>
+
+<!-- BLACKJACK -->
+<div class="game-section" id="tab-blackjack">
+  <div class="bj-table">
+    <div class="bj-section-label">🤖 Dealer</div>
+    <div class="cards-row" id="dealer-cards"></div>
+    <div class="bj-score">Total dealer: <strong id="dealer-score">?</strong></div>
+
+    <div class="bj-section-label" style="margin-top:.5rem">🧙 Tu mano</div>
+    <div class="cards-row" id="player-cards"></div>
+    <div class="bj-score">Total tuyo: <strong id="player-score">0</strong></div>
+  </div>
+
+  <div class="bj-result" id="bj-result"></div>
+
+  <div class="bj-actions" id="bj-actions" style="display:none">
+    <button class="bj-btn bj-hit" onclick="bjHit()">🃏 Pedir carta</button>
+    <button class="bj-btn bj-stand" onclick="bjStand()">✋ Plantarse</button>
+  </div>
+
+  <div class="bj-deal-row" id="bj-deal-row">
+    <input type="number" id="bj-bet" min="10" max="10000" value="100" placeholder="Apuesta...">
+    <button class="bj-deal-btn" onclick="bjDeal()">🃏 Repartir</button>
+  </div>
+</div>
+
+<script>
+// ====== GLOBAL POINTS ======
+let globalPts = parseInt(localStorage.getItem('mystic_pts')||'1000');
+function savePts(){localStorage.setItem('mystic_pts',globalPts);document.getElementById('global-pts').textContent=globalPts.toLocaleString();}
+function resetPoints(){globalPts=1000;savePts();}
+savePts();
+
+function showTab(tab){
+  document.querySelectorAll('.game-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+
+// ====== TRIVIA ======
+const QUESTIONS=[
+  {q:"¿Cuántos lados tiene un hexágono?",a:"6",opts:["4","5","6","8"]},
+  {q:"¿Cuál es el planeta más grande?",a:"Júpiter",opts:["Saturno","Júpiter","Neptuno","Marte"]},
+  {q:"¿En qué año llegó el hombre a la Luna?",a:"1969",opts:["1965","1969","1972","1980"]},
+  {q:"¿Cuántos colores tiene el arcoíris?",a:"7",opts:["5","6","7","8"]},
+  {q:"¿Cuál es el océano más grande?",a:"Pacífico",opts:["Atlántico","Índico","Pacífico","Ártico"]},
+  {q:"¿Cuántos huesos tiene el cuerpo humano adulto?",a:"206",opts:["198","206","215","220"]},
+  {q:"¿Cuál es la capital de Japón?",a:"Tokio",opts:["Osaka","Kioto","Tokio","Hiroshima"]},
+  {q:"¿Cuántos jugadores tiene un equipo de fútbol?",a:"11",opts:["9","10","11","12"]},
+  {q:"¿Cuántos continentes hay?",a:"7",opts:["5","6","7","8"]},
+  {q:"¿Cuál es el animal más rápido?",a:"Guepardo",opts:["León","Guepardo","Águila","Visón"]},
+  {q:"¿Cuántos planetas tiene el sistema solar?",a:"8",opts:["7","8","9","10"]},
+  {q:"¿Cuál es el metal más pesado?",a:"Osmio",opts:["Oro","Plomo","Osmio","Tungsteno"]},
+  {q:"¿Quién pintó la Mona Lisa?",a:"Leonardo da Vinci",opts:["Picasso","Da Vinci","Leonardo da Vinci","Rembrandt"]},
+  {q:"¿Cuántos cm tiene un metro?",a:"100",opts:["10","100","1000","50"]},
+  {q:"¿Cuál es el río más largo del mundo?",a:"Nilo",opts:["Amazonas","Nilo","Yangtsé","Misisipi"]},
+];
+let tState={q:null,streak:0,correct:0,total:0,timer:null,answered:false};
+
+function loadQuestion(){
+  tState.q=QUESTIONS[rand(0,QUESTIONS.length-1)];
+  tState.answered=false;
+  const reward=rand(80,250);
+  tState.reward=reward;
+  document.getElementById('trivia-reward').textContent='💰 Premio: '+reward+' pts';
+  document.getElementById('q-text').textContent=tState.q.q;
+  document.getElementById('trivia-result').textContent='';
+  document.getElementById('next-btn').style.display='none';
+
+  // Shuffle options
+  const opts=[...tState.q.opts].sort(()=>Math.random()-.5);
+  const grid=document.getElementById('options-grid');
+  grid.innerHTML='';
+  const colors=['#1d4ed8','#065f46','#7c3aed','#b91c1c'];
+  opts.forEach((opt,i)=>{
+    const btn=document.createElement('button');
+    btn.className='opt-btn';
+    btn.textContent=opt;
+    btn.style.borderColor=colors[i]+'66';
+    btn.onclick=()=>answerTrivia(opt,btn);
+    grid.appendChild(btn);
+  });
+
+  // Timer 15s
+  clearInterval(tState.timer);
+  let t=15;
+  document.getElementById('timer-bar').style.transition='none';
+  document.getElementById('timer-bar').style.width='100%';
+  setTimeout(()=>{
+    document.getElementById('timer-bar').style.transition='width '+t+'s linear';
+    document.getElementById('timer-bar').style.width='0%';
+  },50);
+  tState.timer=setInterval(()=>{
+    t--;
+    if(t<=0){clearInterval(tState.timer);if(!tState.answered)timeOut();}
+  },1000);
+}
+
+function answerTrivia(chosen,btn){
+  if(tState.answered)return;
+  tState.answered=true;
+  clearInterval(tState.timer);
+  tState.total++;
+  const correct=chosen===tState.q.a;
+  document.querySelectorAll('.opt-btn').forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===tState.q.a)b.classList.add('correct');
+  });
+  if(correct){
+    btn.classList.add('correct');
+    tState.correct++;tState.streak++;
+    globalPts+=tState.reward;savePts();
+    document.getElementById('trivia-result').textContent='✅ ¡CORRECTO! +'+tState.reward+' pts';
+    document.getElementById('trivia-result').style.color='var(--green)';
+    // === NUEVO: GUARDAR PROGRESO ===
+    guardarProgreso(50, tState.reward, "trivia");
+  } else {
+    btn.classList.add('wrong');
+    tState.streak=0;
+    document.getElementById('trivia-result').textContent='❌ Incorrecto. Era: '+tState.q.a;
+    document.getElementById('trivia-result').style.color='var(--red)';
+  }
+  document.getElementById('trivia-streak').textContent=tState.streak+' 🔥';
+  document.getElementById('trivia-correct').textContent=tState.correct+'/'+tState.total;
+  document.getElementById('next-btn').style.display='block';
+}
+
+function timeOut(){
+  tState.answered=true;tState.streak=0;tState.total++;
+  document.querySelectorAll('.opt-btn').forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===tState.q.a)b.classList.add('correct');
+  });
+  document.getElementById('trivia-result').textContent='⏰ ¡Tiempo! La respuesta era: '+tState.q.a;
+  document.getElementById('trivia-result').style.color='var(--gold)';
+  document.getElementById('trivia-streak').textContent='0 🔥';
+  document.getElementById('next-btn').style.display='block';
+}
+
+function nextQuestion(){loadQuestion();}
+loadQuestion();
+
+// ====== DADOS ======
+let selectedNum=null;
+const DICE_EMOJIS=['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣'];
+
+function selectNum(n){
+  selectedNum=n;
+  document.querySelectorAll('.num-btn').forEach((b,i)=>{
+    b.className='num-btn'+(i+1===n?' selected':'');
+  });
+}
+
+async function rollDice(){
+  if(!selectedNum)return alert('Elige un número primero.');
+  const bet=parseInt(document.getElementById('dice-bet').value)||100;
+  if(bet<=0||bet>globalPts){
+    document.getElementById('dice-result').textContent='❌ Apuesta inválida o sin puntos.';
+    return;
+  }
+  globalPts-=bet;savePts();
+  document.getElementById('roll-btn').disabled=true;
+  document.getElementById('dice-result').textContent='';
+  const die=document.getElementById('die1');
+  die.classList.add('rolling');
+
+  // Animate
+  let i=0;
+  const anim=setInterval(()=>{die.textContent=DICE_EMOJIS[rand(0,5)];i++;if(i>12)clearInterval(anim);},80);
+  await new Promise(r=>setTimeout(r,1100));
+  die.classList.remove('rolling');
+
+  const result=rand(1,6);
+  die.textContent=DICE_EMOJIS[result-1];
+
+  if(result===selectedNum){
+    die.classList.add('highlight');
+    const ganancia=bet*5;
+    globalPts+=ganancia;savePts();
+    document.getElementById('dice-result').innerHTML='<span style="color:var(--gold)">🎉 ¡ACERTASTE el '+result+'! +'+ganancia+' pts</span>';
+    // === NUEVO: GUARDAR PROGRESO ===
+    guardarProgreso(30, ganancia, "dados");
+    setTimeout(()=>die.classList.remove('highlight'),1500);
+  } else {
+    document.getElementById('dice-result').innerHTML='<span style="color:var(--red)">❌ Cayó el '+result+'. Apostaste al '+selectedNum+'. -'+bet+' pts</span>';
+  }
+  document.getElementById('roll-btn').disabled=false;
+}
+
+// ====== BLACKJACK ======
+let deck=[],playerHand=[],dealerHand=[],bjBet=0,bjActive=false;
+
+function buildDeck(){
+  const suits=['♠','♥','♦','♣'];
+  const vals=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  deck=[];
+  for(const s of suits)for(const v of vals)deck.push({v,s});
+  deck.sort(()=>Math.random()-.5);
+}
+
+function cardVal(card){
+  if(['J','Q','K'].includes(card.v))return 10;
+  if(card.v==='A')return 11;
+  return parseInt(card.v);
+}
+
+function handTotal(hand){
+  let t=0,aces=0;
+  for(const c of hand){const v=cardVal(c);if(c.v==='A')aces++;t+=v;}
+  while(t>21&&aces){t-=10;aces--;}
+  return t;
+}
+
+function cardEl(card,hidden){
+  const div=document.createElement('div');
+  const red=['♥','♦'].includes(card.s);
+  div.className='playing-card'+(hidden?' back':red?' red':'');
+  if(hidden){div.textContent='🂠';}
+  else{
+    const top=document.createElement('div');top.textContent=card.v+card.s;
+    div.appendChild(top);
+  }
+  return div;
+}
+
+function renderHands(hideDealer){
+  const dc=document.getElementById('dealer-cards');
+  const pc=document.getElementById('player-cards');
+  dc.innerHTML='';pc.innerHTML='';
+  dealerHand.forEach((c,i)=>dc.appendChild(cardEl(c,hideDealer&&i===0)));
+  playerHand.forEach(c=>pc.appendChild(cardEl(c,false)));
+  document.getElementById('player-score').textContent=handTotal(playerHand);
+  document.getElementById('dealer-score').textContent=hideDealer?'?':handTotal(dealerHand);
+}
+
+function bjDeal(){
+  const bet=parseInt(document.getElementById('bj-bet').value)||100;
+  if(bet<=0||bet>globalPts){
+    document.getElementById('bj-result').textContent='❌ Apuesta inválida.';
+    document.getElementById('bj-result').className='bj-result';
+    return;
+  }
+  bjBet=bet;bjActive=true;
+  globalPts-=bet;savePts();
+  buildDeck();
+  playerHand=[deck.pop(),deck.pop()];
+  dealerHand=[deck.pop(),deck.pop()];
+  document.getElementById('bj-result').textContent='';
+  document.getElementById('bj-result').className='bj-result';
+  document.getElementById('bj-actions').style.display='grid';
+  document.getElementById('bj-deal-row').style.display='none';
+  renderHands(true);
+  if(handTotal(playerHand)===21)bjEnd('blackjack');
+}
+
+function bjHit(){
+  if(!bjActive)return;
+  playerHand.push(deck.pop());
+  renderHands(true);
+  if(handTotal(playerHand)>21)bjEnd('bust');
+  else if(handTotal(playerHand)===21)bjEnd('stand');
+}
+
+function bjStand(){
+  if(!bjActive)return;
+  while(handTotal(dealerHand)<17)dealerHand.push(deck.pop());
+  bjEnd('stand');
+}
+
+function bjEnd(reason){
+  bjActive=false;
+  renderHands(false);
+  document.getElementById('bj-actions').style.display='none';
+  document.getElementById('bj-deal-row').style.display='flex';
+  const pt=handTotal(playerHand),dt=handTotal(dealerHand);
+  const res=document.getElementById('bj-result');
+  if(reason==='blackjack'){
+    const win=Math.floor(bjBet*2.5);
+    globalPts+=win;savePts();
+    res.textContent='🌟 ¡BLACKJACK! +'+win+' pts';res.className='bj-result bj-win';
+    guardarProgreso(80, win, "blackjack");
+  } else if(reason==='bust'){
+    res.textContent='💥 ¡Te pasaste de 21! -'+bjBet+' pts';res.className='bj-result bj-lose';
+  } else if(dt>21||pt>dt){
+    const win=bjBet*2;globalPts+=win;savePts();
+    res.textContent='🏆 ¡GANASTE! +'+win+' pts (tú:'+pt+' dealer:'+dt+')';res.className='bj-result bj-win';
+    guardarProgreso(60, win, "blackjack");
+  } else if(pt===dt){
+    globalPts+=bjBet;savePts();
+    res.textContent='🤝 Empate. Recuperas '+bjBet+' pts.';res.className='bj-result bj-push';
+  } else {
+    res.textContent='💀 El dealer ganó. -'+bjBet+' pts (tú:'+pt+' dealer:'+dt+')';res.className='bj-result bj-lose';
+  }
+}
+
+// ====================== TUTORIAL AUTOMÁTICO (primera vez) ======================
+const TUTORIAL_KEY = "mystic_web_tutorial_seen";
+
+function mostrarTutorial() {
+  if (localStorage.getItem(TUTORIAL_KEY)) return;
+  const modal = document.createElement("div");
+  modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:9999;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;";
+  modal.innerHTML = `
+    <div style="background:#11111a;border:3px solid #7c3aed;border-radius:20px;padding:30px;max-width:460px;color:#e2e8f0;text-align:center;box-shadow:0 0 40px #7c3aed;">
+      <h2 style="color:#f59e0b;margin-bottom:15px;">🎓 ¡Bienvenido a Mystic Web!</h2>
+      <p style="margin-bottom:20px;">Esta es la primera vez que juegas aquí. Aquí tienes un tutorial rápido:</p>
+      <ol style="text-align:left;margin:15px 0 25px 20px;line-height:1.8;">
+        <li>Usa los botones de ataque de arriba</li>
+        <li>Mira las barras de vida (tuya y del enemigo)</li>
+        <li>Gana partidas para conseguir XP y puntos</li>
+        <li>Al final pulsa "Guardar progreso" para sincronizar con Discord</li>
+      </ol>
+      <button onclick="this.closest('div').remove();localStorage.setItem('${TUTORIAL_KEY}','true');" 
+              style="background:#7c3aed;color:white;padding:12px 30px;border:none;border-radius:10px;font-size:1.1rem;cursor:pointer;">
+        ¡Entendido! Empezar a jugar
+      </button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// ====================== SEÑAL AL BOT DE DISCORD ======================
+function mostrarComandoDiscord(resultado, juego) {
+  const cmd = '!resultado_web ' + resultado + ' ' + juego;
+  const color = resultado === 'victoria' ? '#22c55e' : '#ef4444';
+  const div = document.createElement('div');
+  div.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#0f0f20;border:2px solid ' + color + ';padding:14px 22px;border-radius:12px;color:' + color + ';font-weight:700;z-index:9999;text-align:center;max-width:95%;font-family:"Exo 2",sans-serif;font-size:.9rem;box-shadow:0 0 30px ' + color + '33;';
+  div.innerHTML = 'Pega esto en Discord para registrar tu resultado:<br><span style="background:#1a1a2e;padding:5px 12px;border-radius:6px;color:#fff;font-size:1rem;display:inline-block;margin-top:6px;">' + cmd + '</span>';
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 15000);
+}
+
+function guardarProgreso(xp, pts, tipoJuego) {
+  const resultado = pts > 0 ? 'victoria' : 'derrota';
+  notificarResultado(resultado, xp, pts, tipoJuego);
+  mostrarComandoDiscord(resultado, tipoJuego);
+}
+
+window.addEventListener('load', () => {
+  setTimeout(mostrarTutorial, 1200);
+});
+</script>
+</body>
+</html>

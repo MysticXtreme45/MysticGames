@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mystic Creations — Mazmorras</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#04040d;--panel:#080818;--card:#0c0c20;--gold:#f0a500;--gold2:#ffd166;--red:#ff3333;--green:#00e676;--purple:#9d4edd;--blue:#4361ee;--text:#e8e8ff;--dim:#5a5a8a;--border:#1a1a3a}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 50%,#1a003322 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,#00003322 0%,transparent 50%);pointer-events:none;z-index:0}
+.stars{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle var(--d,3s) infinite var(--delay,0s) alternate}
+@keyframes twinkle{from{opacity:.1}to{opacity:.8}}
+.header{text-align:center;padding:1.5rem 1rem .5rem;position:relative;z-index:1}
+.header h1{font-family:'Cinzel Decorative',serif;font-size:clamp(1rem,4vw,2rem);background:linear-gradient(135deg,var(--gold),#ff6b35,var(--gold2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px;filter:drop-shadow(0 0 20px #f0a50055)}
+.header p{color:var(--dim);font-size:.85rem;margin-top:.3rem;letter-spacing:2px;text-transform:uppercase}
+#setup{max-width:520px;margin:1rem auto;padding:1rem;position:relative;z-index:1}
+.setup-section{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:1.2rem;margin-bottom:1rem}
+.setup-section h2{font-family:'Cinzel Decorative',serif;font-size:.85rem;color:var(--gold);margin-bottom:1rem;letter-spacing:2px;display:flex;align-items:center;gap:.5rem}
+.dun-grid{display:flex;flex-direction:column;gap:.6rem}
+.dun-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:.9rem 1.1rem;cursor:pointer;transition:all .25s;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.8rem}
+.dun-card:hover{border-color:var(--gold);background:#0f0f28;transform:translateX(4px);box-shadow:0 0 20px #f0a50015}
+.dun-card.selected{border-color:var(--gold);background:#f0a50008;box-shadow:0 0 25px #f0a50020}
+.dun-emoji{font-size:2rem;line-height:1}
+.dun-info h3{font-size:.9rem;font-weight:700;margin-bottom:.2rem;color:var(--text)}
+.dun-info p{font-size:.72rem;color:var(--dim);line-height:1.4}
+.dun-badge{background:#f0a50015;border:1px solid #f0a50033;color:var(--gold);padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:700;white-space:nowrap}
+.dun-badge.easy{background:#00e67615;border-color:#00e67633;color:var(--green)}
+.dun-badge.med{background:#4361ee15;border-color:#4361ee33;color:var(--blue)}
+.dun-badge.hard{background:#ff333315;border-color:#ff333333;color:var(--red)}
+.fg{margin-bottom:.8rem}
+.fg label{display:block;font-size:.7rem;color:var(--dim);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:1.5px;font-weight:600}
+.fg input,.fg select{width:100%;padding:.6rem 1rem;background:#06061a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.9rem;font-weight:600;outline:none;transition:border-color .2s}
+.fg input:focus,.fg select:focus{border-color:var(--gold)}
+.fg select option{background:#0c0c20}
+.start-btn{width:100%;padding:1rem;background:linear-gradient(135deg,#8b5e00,var(--gold),#c17d00);border:none;border-radius:12px;color:#000;font-family:'Cinzel Decorative',serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:1px;text-transform:uppercase}
+.start-btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px #f0a50040}
+.start-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+#dungeon{display:none;max-width:700px;margin:0 auto;padding:.8rem;position:relative;z-index:1}
+.dun-topbar{display:flex;justify-content:space-between;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:.7rem 1.2rem;margin-bottom:.8rem}
+.dun-topbar-name{font-family:'Cinzel Decorative',serif;font-size:.8rem;color:var(--gold)}
+.floor-counter{background:#f0a50015;border:1px solid #f0a50033;color:var(--gold);padding:4px 14px;border-radius:999px;font-size:.8rem;font-weight:700}
+.floor-dots{display:flex;gap:.4rem;justify-content:center;margin-bottom:.8rem}
+.fdot{width:32px;height:32px;border-radius:50%;background:var(--card);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:var(--dim);transition:all .35s;position:relative}
+.fdot::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid transparent;transition:all .35s}
+.fdot.done{background:#f0a50015;border-color:var(--gold);color:var(--gold)}
+.fdot.cur{background:#f0a50025;border-color:var(--gold);color:var(--gold);transform:scale(1.2);box-shadow:0 0 16px #f0a50055}
+.fdot.cur::after{border-color:var(--gold);animation:pulse-ring 1.5s infinite}
+@keyframes pulse-ring{0%{transform:scale(1);opacity:1}100%{transform:scale(1.5);opacity:0}}
+.scene{position:relative;height:240px;border-radius:16px;overflow:hidden;border:1px solid var(--border);margin-bottom:.8rem}
+.scene-cave{background:radial-gradient(ellipse at 50% 100%,#2a0a00,#0d0400)}
+.scene-tower{background:radial-gradient(ellipse at 50% 100%,#0a0025,#03000f)}
+.scene-abyss{background:radial-gradient(ellipse at 50% 100%,#000005,#000)}
+.ground{position:absolute;bottom:0;left:0;right:0;height:55px}
+.scene-cave .ground{background:linear-gradient(180deg,transparent,#3d1500 60%,#1a0800)}
+.scene-tower .ground{background:linear-gradient(180deg,transparent,#0d0030 60%,#050015)}
+.scene-abyss .ground{background:linear-gradient(180deg,transparent,#050510 60%,#000)}
+.particle{position:absolute;width:3px;height:3px;border-radius:50%;animation:float-up var(--d,4s) infinite var(--del,0s) linear;opacity:0}
+.scene-cave .particle{background:#f0a500}
+.scene-tower .particle{background:#9d4edd}
+.scene-abyss .particle{background:#4361ee}
+@keyframes float-up{0%{opacity:0;transform:translateY(0) scale(1)}20%{opacity:.8}80%{opacity:.3}100%{opacity:0;transform:translateY(-100px) scale(0)}}
+.torch{position:absolute;font-size:1.8rem;animation:torch-flicker .4s infinite alternate ease-in-out;filter:drop-shadow(0 0 8px #f0a50088)}
+@keyframes torch-flicker{from{transform:scaleX(1) scaleY(1)}to{transform:scaleX(.88) scaleY(1.08)}}
+.char{position:absolute;bottom:50px;display:flex;flex-direction:column;align-items:center;gap:5px}
+.char-sprite{font-size:4rem;line-height:1;filter:drop-shadow(0 6px 16px #00000099);transition:transform .15s}
+.char-name{font-size:.65rem;font-weight:700;background:#00000099;backdrop-filter:blur(4px);padding:3px 10px;border-radius:999px;white-space:nowrap;letter-spacing:.5px;border:1px solid #ffffff11}
+.char-sub{font-size:.6rem;color:var(--gold);white-space:nowrap}
+#pchar{left:7%}
+#echar{right:7%}
+.vs-line{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Cinzel Decorative',serif;font-size:.75rem;color:#ffffff22;letter-spacing:2px;pointer-events:none}
+@keyframes slash-right{0%{transform:translateX(0) rotate(0)}40%{transform:translateX(80px) rotate(5deg)}60%{transform:translateX(80px) rotate(-5deg)}100%{transform:translateX(0) rotate(0)}}
+@keyframes slash-left{0%{transform:translateX(0) rotate(0)}40%{transform:translateX(-80px) rotate(-5deg)}60%{transform:translateX(-80px) rotate(5deg)}100%{transform:translateX(0) rotate(0)}}
+@keyframes take-hit{0%,100%{transform:translateX(0)}20%{transform:translateX(12px)}40%{transform:translateX(-12px)}60%{transform:translateX(8px)}80%{transform:translateX(-8px)}}
+@keyframes death-fall{0%{opacity:1;transform:rotate(0) scale(1)}100%{opacity:0;transform:rotate(-90deg) scale(.5) translateY(20px)}}
+@keyframes victory-bounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-24px) scale(1.1)}}
+.doing-atk .char-sprite{animation:slash-right .45s ease}
+.doing-spec .char-sprite{animation:slash-right .45s ease}
+.enemy-atk .char-sprite{animation:slash-left .45s ease}
+.taking-hit .char-sprite{animation:take-hit .35s ease}
+.dying-now .char-sprite{animation:death-fall .6s ease forwards}
+.winning-now .char-sprite{animation:victory-bounce .5s ease 2}
+.pop{position:absolute;font-family:'Cinzel Decorative',serif;font-weight:900;pointer-events:none;animation:pop-up .85s ease forwards;z-index:10}
+@keyframes pop-up{0%{opacity:1;transform:translateY(0) scale(1)}30%{transform:translateY(-20px) scale(1.3)}100%{opacity:0;transform:translateY(-70px) scale(.8)}}
+.pop-dmg{color:#ff4444;font-size:1.8rem;text-shadow:0 0 12px #ff444488}
+.pop-crit{color:#f0a500;font-size:2.4rem;text-shadow:0 0 20px #f0a50099}
+.pop-heal{color:#00e676;font-size:1.6rem;text-shadow:0 0 12px #00e67688}
+.pop-miss{color:#888;font-size:1.2rem}
+.hud{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem}
+.hud-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:.7rem .9rem}
+.hud-lbl{font-size:.65rem;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:.25rem;font-weight:600}
+.hud-hp{font-size:1rem;font-weight:700;margin-bottom:.3rem}
+.hp-wrap{background:#0a0a18;border-radius:999px;height:7px;overflow:hidden}
+.hp-fill{height:100%;border-radius:999px;transition:width .45s cubic-bezier(.4,0,.2,1)}
+.hp-fill.green{background:linear-gradient(90deg,#00c853,#69f0ae)}
+.hp-fill.yellow{background:linear-gradient(90deg,#f9a825,#ffd54f)}
+.hp-fill.red{background:linear-gradient(90deg,#b71c1c,#ef5350)}
+.log-wrap{background:#03030e;border:1px solid var(--border);border-radius:10px;height:75px;overflow-y:auto;padding:.5rem .8rem;margin-bottom:.7rem;scroll-behavior:smooth}
+.log-wrap::-webkit-scrollbar{width:3px}
+.log-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:999px}
+.log-entry{font-size:.76rem;line-height:1.7;padding-left:.5rem;border-left:2px solid transparent}
+.log-p{border-color:var(--gold);color:#ffd166}
+.log-e{border-color:var(--red);color:#ff8080}
+.log-s{border-color:var(--dim);color:var(--dim)}
+.log-w{border-color:var(--green);color:var(--green)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem}
+.action-btn{padding:.8rem .5rem;border:none;border-radius:10px;font-family:'Rajdhani',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.8px;position:relative;overflow:hidden}
+.action-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#ffffff15,transparent);pointer-events:none}
+.action-btn:disabled{opacity:.3;cursor:not-allowed;transform:none!important}
+.btn-atk{background:linear-gradient(135deg,#1a3a8f,#2563eb);color:#fff}
+.btn-atk:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 20px #2563eb44}
+.btn-spec{background:linear-gradient(135deg,#5b1fa8,#7c3aed);color:#fff}
+.btn-spec:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 20px #7c3aed44}
+.btn-flee{background:linear-gradient(135deg,#1f1f3a,#2d2d4a);color:var(--dim);grid-column:span 2;border:1px solid var(--border)}
+.btn-flee:hover:not(:disabled){color:var(--text);transform:translateY(-1px)}
+#result{display:none;position:fixed;inset:0;background:#000000dd;backdrop-filter:blur(8px);z-index:100;align-items:center;justify-content:center}
+#result.show{display:flex}
+.result-box{background:var(--panel);border:1px solid var(--gold);border-radius:20px;padding:2rem 2.5rem;text-align:center;max-width:380px;width:90%;animation:result-in .4s cubic-bezier(.34,1.56,.64,1);box-shadow:0 0 60px #f0a50030}
+@keyframes result-in{from{transform:scale(.6) translateY(40px);opacity:0}to{transform:scale(1);opacity:1}}
+.r-emoji{font-size:3.5rem;margin-bottom:.5rem}
+.r-title{font-family:'Cinzel Decorative',serif;font-size:1.3rem;margin-bottom:.4rem}
+.r-win{color:var(--gold)}.r-lose{color:var(--red)}.r-neutral{color:var(--dim)}
+.r-reward{font-size:1.1rem;font-weight:700;color:var(--gold2);margin:.5rem 0}
+.r-desc{color:var(--dim);font-size:.82rem;margin-bottom:1.2rem;line-height:1.5}
+.r-btn{padding:.8rem 2rem;background:linear-gradient(135deg,#8b5e00,var(--gold));border:none;border-radius:10px;color:#000;font-family:'Cinzel Decorative',serif;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:1px}
+.r-btn:hover{transform:scale(1.05);box-shadow:0 6px 20px #f0a50040}
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+<div class="header">
+  <h1>⚔️ Mystic Creations</h1>
+  <p>Sistema de Mazmorras</p>
+</div>
+<div id="setup">
+  <div class="setup-section">
+    <h2>🗺️ Elige tu Mazmorra</h2>
+    <div class="dun-grid">
+      <div class="dun-card" id="dc0" onclick="pickDungeon(0)">
+        <div class="dun-emoji">🕳️</div>
+        <div class="dun-info"><h3>Cueva Sombría</h3><p>Goblin · Troll · Jefe Goblin · Recompensa: 600 pts</p></div>
+        <div class="dun-badge easy">3 pisos</div>
+      </div>
+      <div class="dun-card" id="dc1" onclick="pickDungeon(1)">
+        <div class="dun-emoji">🏰</div>
+        <div class="dun-info"><h3>Torre del Caos</h3><p>Guardias · Magos · Demonios · Recompensa: 1500 pts</p></div>
+        <div class="dun-badge med">5 pisos</div>
+      </div>
+      <div class="dun-card" id="dc2" onclick="pickDungeon(2)">
+        <div class="dun-emoji">🌑</div>
+        <div class="dun-info"><h3>Abismo Eterno</h3><p>Espectros · Dragones · Dioses · Recompensa: 3000 pts</p></div>
+        <div class="dun-badge hard">7 pisos</div>
+      </div>
+    </div>
+  </div>
+  <div class="setup-section">
+    <h2>👤 Tu Personaje (desde Discord)</h2>
+    <div style="background:#0c0c20;border:1px solid #1a1a3a;border-radius:10px;padding:.8rem 1rem;margin-bottom:.8rem;">
+      <div style="font-size:.7rem;color:#5a5a8a;text-transform:uppercase;letter-spacing:1px;margin-bottom:.5rem;">Jugador</div>
+      <div id="info-nombre" style="font-weight:700;font-size:1rem;color:#e8e8ff;">Cargando...</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.8rem;">
+      <div style="background:#0c0c20;border:1px solid #1a1a3a;border-radius:10px;padding:.8rem;">
+        <div style="font-size:.7rem;color:#5a5a8a;text-transform:uppercase;letter-spacing:1px;margin-bottom:.3rem;">Arma</div>
+        <div id="info-arma" style="font-weight:700;color:#f0a500;">Cargando...</div>
+      </div>
+      <div style="background:#0c0c20;border:1px solid #1a1a3a;border-radius:10px;padding:.8rem;">
+        <div style="font-size:.7rem;color:#5a5a8a;text-transform:uppercase;letter-spacing:1px;margin-bottom:.3rem;">Nivel</div>
+        <div id="info-nivel" style="font-weight:700;color:#f0a500;">Cargando...</div>
+      </div>
+    </div>
+    <div id="no-discord-warn" style="display:none;background:#1a0a00;border:1px solid #f0a50055;border-radius:10px;padding:.8rem;margin-bottom:.8rem;color:#f0a500;font-size:.8rem;text-align:center;">
+      ⚠️ Abre este juego desde Discord con <b>!entrenar</b> para usar tu arma real.
+    </div>
+    <button class="start-btn" id="startbtn" onclick="startGame()" disabled>⚔️ Entrar a la Mazmorra</button>
+  </div>
+</div>
+<div id="dungeon">
+  <div class="dun-topbar">
+    <div class="dun-topbar-name" id="dun-name">🕳️ Cueva Sombría</div>
+    <div class="floor-counter" id="floor-ctr">Piso 1 / 3</div>
+  </div>
+  <div class="floor-dots" id="fdots"></div>
+  <div class="scene scene-cave" id="scene">
+    <div class="torch" style="left:4%;top:18%">🔥</div>
+    <div class="torch" style="right:4%;top:18%;animation-delay:.2s">🔥</div>
+    <div class="ground"></div>
+    <div class="vs-line">VS</div>
+    <div class="char" id="pchar">
+      <div class="char-sprite" id="p-sprite">🧙</div>
+      <div class="char-name" id="p-name">Guerrero</div>
+      <div class="char-sub" id="p-weap-label">🎯 Rifle</div>
+    </div>
+    <div class="char" id="echar">
+      <div class="char-sprite" id="e-sprite">👺</div>
+      <div class="char-name" id="e-name">Goblin</div>
+      <div class="char-sub" id="e-floor-label">Piso 1</div>
+    </div>
+  </div>
+  <div class="hud">
+    <div class="hud-card">
+      <div class="hud-lbl">Tu HP</div>
+      <div class="hud-hp"><span id="php">100</span> / <span id="pmaxhp">100</span></div>
+      <div class="hp-wrap"><div class="hp-fill green" id="php-fill" style="width:100%"></div></div>
+    </div>
+    <div class="hud-card">
+      <div class="hud-lbl">Enemigo HP</div>
+      <div class="hud-hp"><span id="ehp">80</span> / <span id="emaxhp">80</span></div>
+      <div class="hp-wrap"><div class="hp-fill red" id="ehp-fill" style="width:100%"></div></div>
+    </div>
+  </div>
+  <div class="log-wrap" id="log"></div>
+  <div class="actions">
+    <button class="action-btn btn-atk" id="btn-atk" onclick="doAttack()">⚔️ Atacar</button>
+    <button class="action-btn btn-spec" id="btn-spec" onclick="doSpecial()">🔮 Especial</button>
+    <button class="action-btn btn-flee" onclick="doFlee()">🏃 Huir de la mazmorra</button>
+  </div>
+</div>
+<div id="result">
+  <div class="result-box">
+    <div class="r-emoji" id="r-emoji">🏆</div>
+    <div class="r-title" id="r-title">¡Victoria!</div>
+    <div class="r-reward" id="r-reward"></div>
+    <div class="r-desc" id="r-desc"></div>
+    <button class="r-btn" onclick="resetAll()">🗺️ Volver a elegir</button>
+  </div>
+</div>
+<script>
+(function(){const s=document.getElementById('stars');for(let i=0;i<80;i++){const d=document.createElement('div');const sz=Math.random()*2+1;d.className='star';d.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;--delay:${Math.random()*4}s`;s.appendChild(d)}})();
+const DUNGEONS=[
+  {name:'🕳️ Cueva Sombría',scene:'cave',pisos:3,enemies:[{n:'Goblin',e:'👺',hp:70,atk:[8,18]},{n:'Troll',e:'🧌',hp:100,atk:[12,22]},{n:'Jefe Goblin',e:'👹',hp:145,atk:[16,28]}],reward:600},
+  {name:'🏰 Torre del Caos',scene:'tower',pisos:5,enemies:[{n:'Guardia',e:'💂',hp:75,atk:[10,20]},{n:'Mago Oscuro',e:'🧙',hp:95,atk:[14,25]},{n:'Demonio',e:'😈',hp:120,atk:[17,28]},{n:'Arconte',e:'👿',hp:155,atk:[20,32]},{n:'Señor del Caos',e:'🌑',hp:200,atk:[24,38]}],reward:1500},
+  {name:'🌑 Abismo Eterno',scene:'abyss',pisos:7,enemies:[{n:'Espectro',e:'👻',hp:85,atk:[12,22]},{n:'Vampiro',e:'🧛',hp:110,atk:[15,26]},{n:'Golem',e:'🗿',hp:150,atk:[19,30]},{n:'Liche',e:'💀',hp:175,atk:[22,34]},{n:'Dragón Joven',e:'🐉',hp:210,atk:[25,38]},{n:'Ángel Caído',e:'😇',hp:245,atk:[28,42]},{n:'Dios Oscuro',e:'🌑',hp:300,atk:[32,48]}],reward:3000},
+];
+// Armas del juego (igual que el bot)
+const WEAPONS_MAZ = {
+  'Pistola de Agua':    {bonus:0,   crit:0,  emoji:'🔫'},
+  'Laser Neon':         {bonus:12,  crit:5,  emoji:'⚡'},
+  'Arco Electrico':     {bonus:18,  crit:8,  emoji:'🏹'},
+  'Canon Mistico':      {bonus:28,  crit:10, emoji:'💥'},
+  'Espada Plasma':      {bonus:35,  crit:12, emoji:'🗡️'},
+  'Rifle Cuantico':     {bonus:45,  crit:15, emoji:'🎯'},
+  'Baston del Vacio':   {bonus:55,  crit:20, emoji:'🪄'},
+  'Guantelete Cosmico': {bonus:70,  crit:25, emoji:'🌌'},
+  'Espada del Dueno':   {bonus:999, crit:100,emoji:'👑'},
+  // Nombres con tildes
+  'Láser Neón':         {bonus:12,  crit:5,  emoji:'⚡'},
+  'Arco Eléctrico':     {bonus:18,  crit:8,  emoji:'🏹'},
+  'Cañón Místico':      {bonus:28,  crit:10, emoji:'💥'},
+  'Bastón del Vacío':   {bonus:55,  crit:20, emoji:'🪄'},
+  'Guantelete Cósmico': {bonus:70,  crit:25, emoji:'🌌'},
+  'Espada del Dueño':   {bonus:999, crit:100,emoji:'👑'},
+};
+
+// Leer datos del URL (enviados por Discord)
+const urlParams = new URLSearchParams(location.search);
+const URL_NOMBRE = decodeURIComponent(urlParams.get('nombre') || '');
+const URL_ARMA   = decodeURIComponent(urlParams.get('arma')   || '');
+const URL_NIVEL  = parseInt(urlParams.get('nivel') || '0');
+const URL_USERID = urlParams.get('userid') || '';
+const desdeDiscord = URL_NOMBRE !== '' && URL_ARMA !== '';
+
+// Obtener stats del arma desde URL
+const armaDataMaz = WEAPONS_MAZ[URL_ARMA] || {bonus:0, crit:0, emoji:'🔫'};
+const WB_URL = armaDataMaz.bonus;
+const WC_URL = armaDataMaz.crit;
+
+let picked=null,G={};
+
+function pickDungeon(i){picked=i;document.querySelectorAll('.dun-card').forEach((c,j)=>c.classList.toggle('selected',j===i));document.getElementById('startbtn').disabled=false}
+function r(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function sleep(ms){return new Promise(res=>setTimeout(res,ms))}
+
+// Inicializar UI con datos del URL
+function initFromURL() {
+  if (desdeDiscord) {
+    document.getElementById('info-nombre').textContent = URL_NOMBRE;
+    document.getElementById('info-arma').textContent = armaDataMaz.emoji + ' ' + URL_ARMA;
+    document.getElementById('info-nivel').textContent = 'Nivel ' + URL_NIVEL;
+    document.getElementById('no-discord-warn').style.display = 'none';
+  } else {
+    document.getElementById('info-nombre').textContent = 'Jugador (sin cuenta)';
+    document.getElementById('info-arma').textContent = 'Pistola de Agua';
+    document.getElementById('info-nivel').textContent = 'Nivel 1';
+    document.getElementById('no-discord-warn').style.display = 'block';
+  }
+}
+
+function startGame(){
+  if(picked===null)return;
+  const d=DUNGEONS[picked];
+  const pname = desdeDiscord ? URL_NOMBRE : 'Guerrero';
+  const wb    = desdeDiscord ? WB_URL : 0;
+  const wc    = desdeDiscord ? WC_URL : 0;
+  const nivel = desdeDiscord ? Math.max(1, Math.min(50, URL_NIVEL)) : 1;
+  const pmaxhp=100+nivel*5;
+  G={d,pname,nivel,wb,wc,pHP:pmaxhp,pMaxHP:pmaxhp,eHP:0,eMaxHP:0,floor:0,specUsed:false,busy:false,totalReward:0};
+  document.getElementById('setup').style.display='none';
+  document.getElementById('dungeon').style.display='block';
+  document.getElementById('dun-name').textContent=d.name;
+  document.getElementById('p-name').textContent=pname;
+  document.getElementById('p-weap-label').textContent=armaDataMaz.emoji+' '+(URL_ARMA||'Pistola');
+  const scene=document.getElementById('scene');
+  scene.className='scene scene-'+d.scene;
+  for(let i=0;i<12;i++){const p=document.createElement('div');p.className='particle';p.style.cssText=`left:${r(10,90)}%;bottom:${r(10,50)}px;--d:${3+Math.random()*3}s;--del:${Math.random()*4}s`;scene.appendChild(p)}
+  buildDots();loadFloor();
+}
+function buildDots(){const w=document.getElementById('fdots');w.innerHTML='';for(let i=0;i<G.d.pisos;i++){const d=document.createElement('div');d.className='fdot';d.id='fd'+i;d.textContent=i+1;w.appendChild(d)}refreshDots()}
+function refreshDots(){for(let i=0;i<G.d.pisos;i++){const d=document.getElementById('fd'+i);if(!d)continue;d.className='fdot'+(i<G.floor?' done':i===G.floor?' cur':'')}}
+function loadFloor(){
+  const en=G.d.enemies[G.floor];const eMax=en.hp+G.floor*12;
+  G.eHP=eMax;G.eMaxHP=eMax;G.specUsed=false;G.busy=false;
+  document.getElementById('floor-ctr').textContent='Piso '+(G.floor+1)+' / '+G.d.pisos;
+  document.getElementById('e-sprite').textContent=en.e;
+  document.getElementById('e-name').textContent=en.n;
+  document.getElementById('e-floor-label').textContent='Piso '+(G.floor+1);
+  document.getElementById('emaxhp').textContent=eMax;
+  document.getElementById('pmaxhp').textContent=G.pMaxHP;
+  document.getElementById('btn-spec').disabled=false;
+  document.getElementById('btn-atk').disabled=false;
+  refreshDots();updateBars();
+  addLog('s','⚔️ Piso '+(G.floor+1)+': ¡Aparece '+en.n+' '+en.e+'!');
+}
+function updateBars(){
+  const pp=Math.max(0,(G.pHP/G.pMaxHP)*100);
+  const ep=Math.max(0,(G.eHP/G.eMaxHP)*100);
+  document.getElementById('php').textContent=Math.max(0,Math.round(G.pHP));
+  document.getElementById('ehp').textContent=Math.max(0,Math.round(G.eHP));
+  const pb=document.getElementById('php-fill');pb.style.width=pp+'%';pb.className='hp-fill '+(pp>50?'green':pp>25?'yellow':'red');
+  const eb=document.getElementById('ehp-fill');eb.style.width=ep+'%';eb.className='hp-fill '+(ep>50?'green':ep>25?'yellow':'red');
+}
+function addLog(type,msg){const log=document.getElementById('log');const el=document.createElement('div');el.className='log-entry log-'+type;el.textContent=msg;log.appendChild(el);log.scrollTop=log.scrollHeight;while(log.children.length>30)log.removeChild(log.firstChild)}
+function showPop(dmg,cls,side){const scene=document.getElementById('scene');const el=document.createElement('div');el.className='pop '+cls;el.textContent=(cls==='pop-heal'?'+':'-')+Math.abs(dmg);el.style.top=r(15,50)+'%';el.style[side==='enemy'?'left':'right']=r(15,40)+'%';scene.appendChild(el);setTimeout(()=>el.remove(),900)}
+function doAnim(id,cls,dur=500){const el=document.getElementById(id);el.classList.remove('doing-atk','doing-spec','enemy-atk','taking-hit','dying-now','winning-now');void el.offsetWidth;el.classList.add(cls);if(cls!=='dying-now')setTimeout(()=>el.classList.remove(cls),dur)}
+async function doAttack(){
+  if(G.busy)return;G.busy=true;setButtons(false);
+  const base=r(20+G.wb,45+G.wb+G.nivel*2);
+  const isCrit=r(1,100)<=G.wc;
+  const dmg=isCrit?Math.floor(base*1.85):base;
+  doAnim('pchar','doing-atk');await sleep(220);
+  doAnim('echar','taking-hit');showPop(dmg,isCrit?'pop-crit':'pop-dmg','enemy');
+  G.eHP-=dmg;updateBars();
+  addLog('p','⚔️'+(isCrit?' ¡CRÍTICO!':'')+' '+G.pname+' hizo '+dmg+' daño.');
+  await sleep(400);
+  if(G.eHP<=0){await floorWin();return;}
+  await enemyTurn();
+  if(G.pHP>0){G.busy=false;setButtons(true);}
+}
+async function doSpecial(){
+  if(G.busy||G.specUsed)return;
+  G.busy=true;G.specUsed=true;setButtons(false);
+  document.getElementById('btn-spec').disabled=true;
+  const hit=r(1,100)>35;
+  if(hit){
+    const base=r(55,90)+G.wb;const isCrit=r(1,100)<=G.wc;const dmg=isCrit?Math.floor(base*2.1):base;
+    doAnim('pchar','doing-spec');await sleep(220);
+    doAnim('echar','taking-hit');showPop(dmg,isCrit?'pop-crit':'pop-dmg','enemy');
+    G.eHP-=dmg;updateBars();
+    addLog('p','🔮'+(isCrit?' ¡ESPECIAL CRÍTICO! ':' Especial: ')+dmg+' daño!');
+  } else {
+    doAnim('pchar','doing-spec');await sleep(300);showPop(0,'pop-miss','enemy');addLog('s','🔮 Falló el especial...');
+  }
+  await sleep(400);
+  if(G.eHP<=0){await floorWin();return;}
+  await enemyTurn();
+  if(G.pHP>0){G.busy=false;setButtons(true);}
+}
+async function enemyTurn(){
+  const en=G.d.enemies[G.floor];
+  const dmg=r(en.atk[0]+G.floor*2,en.atk[1]+G.floor*3);
+  doAnim('echar','enemy-atk');await sleep(220);
+  doAnim('pchar','taking-hit');showPop(dmg,'pop-dmg','player');
+  G.pHP-=dmg;updateBars();addLog('e','👾 '+en.n+' atacó: -'+dmg+' HP.');
+  if(G.pHP<=0){await sleep(300);endGame(false);}
+}
+function doFlee(){if(G.busy)return;endGame(false,'flee')}
+async function floorWin(){
+  doAnim('echar','dying-now',700);
+  const reward=Math.floor(G.d.reward/G.d.pisos);G.totalReward+=reward;
+  await sleep(350);doAnim('pchar','winning-now',900);
+  addLog('w','✅ ¡'+G.d.enemies[G.floor].n+' derrotado! +'+reward+' pts');
+  await sleep(700);
+  if(G.floor+1>=G.d.pisos){endGame(true);return;}
+  G.floor++;
+  const heal=Math.floor(G.pMaxHP*.18);G.pHP=Math.min(G.pMaxHP,G.pHP+heal);
+  showPop(-heal,'pop-heal','player');addLog('s','💚 +'+heal+' HP recuperado entre pisos.');
+  await sleep(500);loadFloor();G.busy=false;setButtons(true);
+}
+function setButtons(on){document.getElementById('btn-atk').disabled=!on;if(!G.specUsed)document.getElementById('btn-spec').disabled=!on}
+function endGame(win,reason){
+  const o=document.getElementById('result');o.classList.add('show');
+  if(win){
+    document.getElementById('r-emoji').textContent='🏆';
+    document.getElementById('r-title').textContent='¡Mazmorra Completada!';
+    document.getElementById('r-title').className='r-title r-win';
+    document.getElementById('r-reward').textContent='+'+G.totalReward+' pts ganados';
+    document.getElementById('r-desc').textContent=G.d.name+' conquistada en '+G.d.pisos+' pisos. ¡Eres imparable!';
+  } else if(reason==='flee'){
+    document.getElementById('r-emoji').textContent='🏃';
+    document.getElementById('r-title').textContent='Huiste de la batalla';
+    document.getElementById('r-title').className='r-title r-neutral';
+    document.getElementById('r-reward').textContent='';
+    document.getElementById('r-desc').textContent='Llegaste al piso '+(G.floor+1)+'/'+G.d.pisos+'. ¡Vuelve más fuerte!';
+  } else {
+    document.getElementById('r-emoji').textContent='💀';
+    document.getElementById('r-title').textContent='¡Caíste en Batalla!';
+    document.getElementById('r-title').className='r-title r-lose';
+    document.getElementById('r-reward').textContent='';
+    document.getElementById('r-desc').textContent='Caíste en piso '+(G.floor+1)+'/'+G.d.pisos+'. ¡Entrena más y vuelve!';
+  }
+}
+function resetAll(){
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('dungeon').style.display='none';
+  document.getElementById('setup').style.display='block';
+  document.getElementById('log').innerHTML='';
+  document.getElementById('fdots').innerHTML='';
+  picked=null;
+  document.querySelectorAll('.dun-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('startbtn').disabled=true;
+  document.querySelectorAll('.particle').forEach(p=>p.remove());
+}
+
+// ── SEÑAL AL BOT: mostrar comando a pegar en Discord ──
+function enviarResultadoDiscord(resultado, juego) {
+  if (!URL_USERID) return;
+  const cmd = '!resultado_web ' + resultado + ' ' + juego;
+  const div = document.createElement('div');
+  div.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#080818;border:2px solid #f0a500;padding:14px 22px;border-radius:12px;color:#e8e8ff;font-weight:700;z-index:10000;text-align:center;max-width:95%;font-family:Rajdhani,sans-serif;font-size:.9rem;box-shadow:0 0 30px #f0a50033;';
+  div.innerHTML = '📢 Pega esto en Discord para registrar tu resultado:<br><span style="background:#1a1a3a;padding:5px 12px;border-radius:6px;color:#f0a500;font-size:1rem;display:inline-block;margin-top:6px;">' + cmd + '</span>';
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 15000);
+}
+
+// Hook en endGame para disparar señal
+const _endGameOriginal = endGame;
+endGame = function(win, reason) {
+  _endGameOriginal(win, reason);
+  const piso = (G.floor || 0) + 1;
+  if (win) {
+    enviarResultadoDiscord('victoria', 'mazmorra');
+  } else if (reason === 'flee') {
+    enviarResultadoDiscord('huida', 'mazmorra');
+  } else {
+    enviarResultadoDiscord('derrota', 'mazmorra');
+  }
+};
+
+// Cargar datos del URL al iniciar
+window.addEventListener('load', () => {
+  initFromURL();
+  setTimeout(mostrarTutorialMazmorra, 800);
+});
+</script>
+</body>
+</html>

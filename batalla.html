@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚔️ Batalla Mística</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --panel: #11111a;
+    --border: #2a1f4a;
+    --accent: #7c3aed;
+    --accent2: #a855f7;
+    --gold: #f59e0b;
+    --red: #ef4444;
+    --green: #22c55e;
+    --blue: #3b82f6;
+    --cyan: #06b6d4;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --hp-green: #22c55e;
+    --hp-yellow: #eab308;
+    --hp-red: #ef4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(124,58,237,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(168,85,247,0.06) 0%, transparent 50%);
+  }
+
+  /* STARS BG */
+  .stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .star { position: absolute; border-radius: 50%; background: white; animation: twinkle 3s infinite; }
+  @keyframes twinkle { 0%,100%{opacity:.3} 50%{opacity:1} }
+
+  #app { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 10px; }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    padding: 12px 0 6px;
+  }
+  .header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--gold), var(--accent2), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 3px;
+    text-shadow: none;
+  }
+  .header .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* ═══════════════════════════════════════
+     BATTLE ARENA — todo en una sola pantalla
+  ═══════════════════════════════════════ */
+  .arena {
+    display: grid;
+    grid-template-rows: auto auto auto auto;
+    gap: 8px;
+  }
+
+  /* FIGHTERS ROW */
+  .fighters {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .fighter-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .fighter-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(124,58,237,0.05), transparent);
+    pointer-events: none;
+  }
+  .fighter-card.player { border-color: rgba(124,58,237,0.5); }
+  .fighter-card.enemy  { border-color: rgba(239,68,68,0.4); }
+
+  .fighter-name {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--accent2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+  }
+  .fighter-card.enemy .fighter-name { color: var(--red); }
+
+  .fighter-weapon {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin: 2px 0 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .hp-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+  .hp-value { font-weight: 700; color: var(--text); }
+
+  .hp-bar-wrap {
+    height: 10px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 5px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .hp-bar {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.5s cubic-bezier(0.4,0,0.2,1), background 0.3s;
+    background: var(--hp-green);
+  }
+  .hp-bar.yellow { background: var(--hp-yellow); }
+  .hp-bar.red    { background: var(--hp-red); box-shadow: 0 0 8px rgba(239,68,68,0.5); }
+
+  .fighter-sprite {
+    font-size: 2.2rem;
+    text-align: center;
+    margin: 4px 0;
+    line-height: 1;
+    filter: drop-shadow(0 0 8px rgba(124,58,237,0.4));
+    transition: transform 0.1s;
+  }
+  .fighter-card.enemy .fighter-sprite {
+    filter: drop-shadow(0 0 8px rgba(239,68,68,0.4));
+  }
+  .shake { animation: shake 0.3s; }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    25%{transform:translateX(-6px)}
+    75%{transform:translateX(6px)}
+  }
+  .attack-flash { animation: aflash 0.2s; }
+  @keyframes aflash { 0%,100%{filter:brightness(1)} 50%{filter:brightness(2.5) saturate(2)} }
+
+  /* VS */
+  .vs-badge {
+    font-family: 'Cinzel', serif;
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--gold);
+    text-align: center;
+    text-shadow: 0 0 20px rgba(245,158,11,0.5);
+    padding: 0 4px;
+  }
+
+  /* EFFECTS ROW */
+  .effects-row {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    min-height: 24px;
+    flex-wrap: wrap;
+  }
+  .effect-badge {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 0.72rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    animation: fadein 0.3s;
+  }
+  @keyframes fadein { from{opacity:0;transform:scale(0.8)} to{opacity:1;transform:scale(1)} }
+
+  /* ═══ ATTACK BUTTONS — arriba, prominentes ═══ */
+  .attack-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+  }
+  .attack-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .attack-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .attack-grid.row2 {
+    grid-template-columns: repeat(2, 1fr);
+    margin-top: 6px;
+  }
+
+  .btn-attack {
+    background: rgba(124,58,237,0.12);
+    border: 1px solid rgba(124,58,237,0.35);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 10px 6px;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.5px;
+  }
+  .btn-attack .btn-icon { font-size: 1.3rem; line-height: 1; }
+  .btn-attack .btn-dmg  { font-size: 0.65rem; color: var(--muted); }
+  .btn-attack .btn-cd   {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    border-radius: 10px;
+  }
+
+  .btn-attack:hover:not(:disabled) {
+    background: rgba(124,58,237,0.25);
+    border-color: var(--accent2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(124,58,237,0.3);
+  }
+  .btn-attack:active:not(:disabled) { transform: scale(0.96); }
+  .btn-attack:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-attack.fire   { border-color: rgba(239,68,68,0.4);  background: rgba(239,68,68,0.08); }
+  .btn-attack.fire:hover:not(:disabled)   { background: rgba(239,68,68,0.2); border-color: var(--red);  box-shadow: 0 4px 15px rgba(239,68,68,0.3); }
+  .btn-attack.cyan   { border-color: rgba(6,182,212,0.4);  background: rgba(6,182,212,0.08); }
+  .btn-attack.cyan:hover:not(:disabled)   { background: rgba(6,182,212,0.2); border-color: var(--cyan); box-shadow: 0 4px 15px rgba(6,182,212,0.3); }
+  .btn-attack.green  { border-color: rgba(34,197,94,0.4);  background: rgba(34,197,94,0.08); }
+  .btn-attack.green:hover:not(:disabled)  { background: rgba(34,197,94,0.2); border-color: var(--green);box-shadow: 0 4px 15px rgba(34,197,94,0.3); }
+  .btn-attack.gold   { border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.08);}
+  .btn-attack.gold:hover:not(:disabled)   { background: rgba(245,158,11,0.2);border-color: var(--gold); box-shadow: 0 4px 15px rgba(245,158,11,0.3); }
+  .btn-attack.blue   { border-color: rgba(59,130,246,0.4); background: rgba(59,130,246,0.08);}
+  .btn-attack.blue:hover:not(:disabled)   { background: rgba(59,130,246,0.2);border-color: var(--blue); box-shadow: 0 4px 15px rgba(59,130,246,0.3); }
+
+  /* BATTLE LOG */
+  .log-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+  .log-section::-webkit-scrollbar { width: 4px; }
+  .log-section::-webkit-scrollbar-track { background: transparent; }
+  .log-section::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
+  .log-entry {
+    font-size: 0.78rem;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    animation: slidein 0.25s ease-out;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  @keyframes slidein { from{transform:translateX(-10px);opacity:0} to{transform:translateX(0);opacity:1} }
+  .log-entry:last-child { border-bottom: none; }
+  .log-turn { color: var(--muted); font-size: 0.68rem; flex-shrink: 0; }
+  .log-dmg  { color: var(--red); font-weight: 700; }
+  .log-heal { color: var(--green); font-weight: 700; }
+  .log-crit { color: var(--gold); font-weight: 700; }
+  .log-miss { color: var(--muted); font-style: italic; }
+
+  /* TURN INDICATOR */
+  .turn-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .turn-num { color: var(--accent2); font-weight: 700; }
+  .combo-badge {
+    background: linear-gradient(135deg, var(--gold), #f97316);
+    color: #000;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    display: none;
+  }
+  .combo-badge.show { display: inline; animation: pop 0.3s; }
+  @keyframes pop { 0%{transform:scale(0.5)} 70%{transform:scale(1.2)} 100%{transform:scale(1)} }
+
+  /* OVERLAY - victoria/derrota */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(6px);
+  }
+  .overlay.show { display: flex; }
+  .result-card {
+    background: var(--panel);
+    border: 2px solid var(--accent);
+    border-radius: 20px;
+    padding: 36px 48px;
+    text-align: center;
+    animation: resultpop 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
+    max-width: 360px;
+    width: 90%;
+  }
+  @keyframes resultpop {
+    from{transform:scale(0.4) rotate(-5deg);opacity:0}
+    to{transform:scale(1) rotate(0);opacity:1}
+  }
+  .result-card.victory { border-color: var(--gold); }
+  .result-card.defeat  { border-color: var(--red); }
+  .result-emoji { font-size: 4rem; margin-bottom: 8px; }
+  .result-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.8rem;
+    font-weight: 900;
+    margin-bottom: 8px;
+  }
+  .result-card.victory .result-title { color: var(--gold); text-shadow: 0 0 20px rgba(245,158,11,0.5); }
+  .result-card.defeat  .result-title { color: var(--red);  text-shadow: 0 0 20px rgba(239,68,68,0.5);  }
+  .result-stats { font-size: 0.9rem; color: var(--muted); line-height: 1.8; }
+  .result-stats span { color: var(--text); font-weight: 700; }
+  .btn-retry {
+    margin-top: 20px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 10px 28px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+  .btn-retry:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(124,58,237,0.4); }
+
+  /* LOADING */
+  #loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 16px;
+  }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid rgba(124,58,237,0.2);
+    border-top-color: var(--accent2);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* DAMAGE FLOAT */
+  .dmg-float {
+    position: fixed;
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: 1.6rem;
+    pointer-events: none;
+    animation: float-up 1s ease-out forwards;
+    z-index: 200;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  }
+  @keyframes float-up {
+    0%  { transform: translateY(0) scale(1); opacity: 1; }
+    100%{ transform: translateY(-80px) scale(0.6); opacity: 0; }
+  }
+
+  .locked-msg {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.72rem;
+    color: #fca5a5;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div id="app">
+  <div class="header">
+    <h1>⚔️ BATALLA MÍSTICA</h1>
+    <div class="subtitle">Mystic Creations — Arena de Combate</div>
+  </div>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <div style="font-size:0.85rem;color:var(--muted)">Cargando batalla...</div>
+  </div>
+
+  <div id="game" class="arena" style="display:none">
+
+    <!-- ══ ATTACK BUTTONS — primero en la pantalla ══ -->
+    <div class="attack-section">
+      <div class="attack-title">⚡ Elige tu ataque</div>
+      <div class="attack-grid" id="atkGrid1">
+        <button class="btn-attack" id="btn-normal" onclick="attack('normal')">
+          <span class="btn-icon">🔫</span>
+          <span>Disparar</span>
+          <span class="btn-dmg">15–28 daño</span>
+        </button>
+        <button class="btn-attack cyan" id="btn-laser" onclick="attack('laser')">
+          <span class="btn-icon">⚡</span>
+          <span>Láser</span>
+          <span class="btn-dmg">25+ daño</span>
+        </button>
+        <button class="btn-attack fire" id="btn-especial" onclick="attack('especial')">
+          <span class="btn-icon">🔮</span>
+          <span>Místico</span>
+          <span class="btn-dmg">55–90 daño</span>
+        </button>
+      </div>
+      <div class="attack-grid row2" id="atkGrid2">
+        <button class="btn-attack green" id="btn-curar" onclick="attack('curar')">
+          <span class="btn-icon">✨</span>
+          <span>Curar</span>
+          <span class="btn-dmg">+25–45 HP</span>
+        </button>
+        <button class="btn-attack blue" id="btn-escudo" onclick="attack('escudo')">
+          <span class="btn-icon">🛡️</span>
+          <span>Escudo</span>
+          <span class="btn-dmg">-50% daño</span>
+        </button>
+      </div>
+      <div id="locked-info" class="locked-msg" style="display:none;margin-top:8px"></div>
+    </div>
+
+    <!-- ══ FIGHTERS ══ -->
+    <div class="fighters">
+      <div class="fighter-card player">
+        <div class="fighter-sprite" id="sprite-player">🧙</div>
+        <div class="fighter-name" id="player-name">Jugador</div>
+        <div class="fighter-weapon" id="player-weapon">🔫 Pistola de Agua</div>
+        <div class="hp-label">
+          <span>HP</span>
+          <span class="hp-value" id="player-hp-val">100</span>
+        </div>
+        <div class="hp-bar-wrap">
+          <div class="hp-bar" id="player-hp-bar" style="width:100%"></div>
+        </div>
+      </div>
+
+      <div class="vs-badge">VS</div>
+
+      <div class="fighter-card enemy">
+        <div class="fighter-sprite" id="sprite-enemy">🤖</div>
+        <div class="fighter-name" id="enemy-name">BOT</div>
+        <div class="fighter-weapon" id="enemy-weapon">⚙️ IA Mística</div>
+        <div class="hp-label">
+          <span>HP</span>
+          <span class="hp-value" id="enemy-hp-val">100</span>
+        </div>
+        <div class="hp-bar-wrap">
+          <div class="hp-bar" id="enemy-hp-bar" style="width:100%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TURN / EFFECTS ══ -->
+    <div class="turn-row">
+      <span>Turno <span class="turn-num" id="turn-num">1</span></span>
+      <div class="effects-row" id="effects-row"></div>
+      <span class="combo-badge" id="combo-badge">🔥 COMBO</span>
+    </div>
+
+    <!-- ══ LOG ══ -->
+    <div class="log-section" id="log"></div>
+
+  </div><!-- /game -->
+</div>
+
+<!-- OVERLAY RESULTADO -->
+<div class="overlay" id="overlay">
+  <div class="result-card" id="result-card">
+    <div class="result-emoji" id="result-emoji">🏆</div>
+    <div class="result-title" id="result-title">VICTORIA</div>
+    <div class="result-stats" id="result-stats"></div>
+    <button class="btn-retry" onclick="reiniciar()">⚔️ Jugar de Nuevo</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// PARÁMETROS DE URL — recibe nombre, arma, nivel de Discord
+// ══════════════════════════════════════════════════════
+const params = new URLSearchParams(location.search);
+const PLAYER_NAME  = decodeURIComponent(params.get('nombre') || 'Jugador');
+const PLAYER_ARMA  = decodeURIComponent(params.get('arma')   || 'Pistola de Agua');
+const PLAYER_NIVEL = parseInt(params.get('nivel') || '1');
+
+// Genera estrellas
+(function() {
+  const c = document.getElementById('stars');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const sz = Math.random() * 2 + 0.5;
+    s.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*3}s;animation-duration:${2+Math.random()*3}s`;
+    c.appendChild(s);
+  }
+})();
+
+// ══════════════════════════════════════════════════════
+// ARMAS (mismo que el bot)
+// ══════════════════════════════════════════════════════
+const WEAPONS = {
+  "Pistola de Agua":    {bonus:0,   crit:0,   emoji:"🔫"},
+  "Láser Neón":         {bonus:12,  crit:5,   emoji:"⚡"},
+  "Arco Eléctrico":     {bonus:18,  crit:8,   emoji:"🏹"},
+  "Cañón Místico":      {bonus:28,  crit:10,  emoji:"💥"},
+  "Espada Plasma":      {bonus:35,  crit:12,  emoji:"🗡️"},
+  "Rifle Cuántico":     {bonus:45,  crit:15,  emoji:"🎯"},
+  "Bastón del Vacío":   {bonus:55,  crit:20,  emoji:"🪄"},
+  "Guantelete Cósmico": {bonus:70,  crit:25,  emoji:"🥊"},
+  "Espada del Dueño":   {bonus:999, crit:100, emoji:"👑"},
+};
+const armaData = WEAPONS[PLAYER_ARMA] || WEAPONS["Pistola de Agua"];
+
+// ══════════════════════════════════════════════════════
+// ESTADO DEL JUEGO
+// ══════════════════════════════════════════════════════
+let state = {};
+function initState() {
+  const maxHP = 100;
+  const botHP = 100 + PLAYER_NIVEL * 20;
+  state = {
+    pHP: maxHP, pMaxHP: maxHP,
+    eHP: botHP, eMaxHP: botHP,
+    turno: 1,
+    escudo: false,
+    especialUsado: false,
+    curarUsado: false,
+    terminado: false,
+    combo: 0,
+    danoTotal: 0,
+    efecto: null,
+    efectoTurnos: 0,
+  };
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+function init() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('game').style.display = 'grid';
+
+  initState();
+
+  // Nombres y armas fijas (vienen de Discord)
+  document.getElementById('player-name').textContent   = PLAYER_NAME;
+  document.getElementById('player-weapon').textContent = `${armaData.emoji} ${PLAYER_ARMA}`;
+  document.getElementById('enemy-name').textContent    = `🤖 BOT Lv.${PLAYER_NIVEL}`;
+
+  // Mostrar info de nivel en habilidades bloqueadas
+  checkLockedSkills();
+  updateBars();
+  addLog('sistema', `⚔️ Batalla iniciada — ${PLAYER_NAME} vs BOT Lv.${PLAYER_NIVEL}`);
+  addLog('sistema', `🔫 Arma equipada: ${PLAYER_ARMA} (+${armaData.bonus} daño | ${armaData.crit}% crit)`);
+
+  // Bot ataca periódicamente
+  setInterval(botAutoAttack, 7000);
+}
+
+// ══════════════════════════════════════════════════════
+// HABILIDADES BLOQUEADAS
+// ══════════════════════════════════════════════════════
+function checkLockedSkills() {
+  const lvl = PLAYER_NIVEL;
+  const locked = [];
+  if (lvl < 5)  { document.getElementById('btn-especial').disabled = true; locked.push('Místico (nivel 5)'); }
+  if (lvl < 10) { document.getElementById('btn-escudo').disabled = true;   locked.push('Escudo (nivel 10)'); }
+  if (locked.length) {
+    const el = document.getElementById('locked-info');
+    el.textContent = '🔒 Bloqueado: ' + locked.join(' · ');
+    el.style.display = 'block';
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// BARRAS DE HP
+// ══════════════════════════════════════════════════════
+function updateBars() {
+  const pPct = Math.max(0, (state.pHP / state.pMaxHP) * 100);
+  const ePct = Math.max(0, (state.eHP / state.eMaxHP) * 100);
+
+  document.getElementById('player-hp-val').textContent = Math.max(0, state.pHP);
+  document.getElementById('enemy-hp-val').textContent  = Math.max(0, state.eHP);
+
+  const pb = document.getElementById('player-hp-bar');
+  pb.style.width = pPct + '%';
+  pb.className = 'hp-bar' + (pPct > 50 ? '' : pPct > 25 ? ' yellow' : ' red');
+
+  const eb = document.getElementById('enemy-hp-bar');
+  eb.style.width = ePct + '%';
+  eb.className = 'hp-bar' + (ePct > 50 ? '' : ePct > 25 ? ' yellow' : ' red');
+
+  document.getElementById('turn-num').textContent = state.turno;
+}
+
+// ══════════════════════════════════════════════════════
+// LOG
+// ══════════════════════════════════════════════════════
+function addLog(type, msg) {
+  const log = document.getElementById('log');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  const turn = document.createElement('span');
+  turn.className = 'log-turn';
+  turn.textContent = type === 'sistema' ? '•' : `T${state.turno}`;
+  entry.appendChild(turn);
+  const text = document.createElement('span');
+  text.innerHTML = msg;
+  entry.appendChild(text);
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+// ══════════════════════════════════════════════════════
+// DAÑO FLOTANTE
+// ══════════════════════════════════════════════════════
+function showDmgFloat(el, dmg, color, prefix='') {
+  const rect = el.getBoundingClientRect();
+  const f = document.createElement('div');
+  f.className = 'dmg-float';
+  f.textContent = prefix + dmg;
+  f.style.color = color;
+  f.style.left = (rect.left + rect.width/2 - 30) + 'px';
+  f.style.top  = (rect.top + window.scrollY - 10) + 'px';
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), 1000);
+}
+
+// ══════════════════════════════════════════════════════
+// CALC DAÑO
+// ══════════════════════════════════════════════════════
+function rnd(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+function calcDano(baseMin, baseMax) {
+  const bono = armaData.bonus;
+  const crit = armaData.crit;
+  let dmg = rnd(baseMin, baseMax) + bono;
+  const esCrit = rnd(1,100) <= crit;
+  if (esCrit) dmg = Math.floor(dmg * 2);
+  return {dmg, esCrit};
+}
+
+// ══════════════════════════════════════════════════════
+// ATAQUE DEL JUGADOR
+// ══════════════════════════════════════════════════════
+function attack(tipo) {
+  if (state.terminado) return;
+
+  // Deshabilitar botones temporalmente (anti-spam)
+  setAllButtons(false);
+
+  let dmg = 0, esCrit = false, msg = '';
+
+  if (tipo === 'normal') {
+    const r = calcDano(15, 28);
+    dmg = r.dmg; esCrit = r.esCrit;
+    const cap = armaData.bonus >= 55 ? 200 : armaData.bonus >= 30 ? 150 : 90;
+    dmg = Math.min(dmg, cap);
+    msg = esCrit
+      ? `🔫 <span class="log-crit">¡CRÍTICO x2!</span> ${PLAYER_NAME} hizo <span class="log-dmg">-${dmg} HP</span> al BOT`
+      : `🔫 ${PLAYER_NAME} disparó y causó <span class="log-dmg">-${dmg} HP</span>`;
+
+  } else if (tipo === 'laser') {
+    dmg = 25 + armaData.bonus;
+    esCrit = rnd(1,100) <= armaData.crit;
+    if (esCrit) dmg = Math.floor(dmg * 2);
+    const cap = armaData.bonus >= 55 ? 200 : 120;
+    dmg = Math.min(dmg, cap);
+    msg = esCrit
+      ? `⚡ <span class="log-crit">¡CRÍTICO!</span> Láser impactó <span class="log-dmg">-${dmg} HP</span>`
+      : `⚡ Láser Neón causó <span class="log-dmg">-${dmg} HP</span>`;
+
+  } else if (tipo === 'especial') {
+    if (state.especialUsado) { setAllButtons(true); return; }
+    state.especialUsado = true;
+    document.getElementById('btn-especial').disabled = true;
+    if (rnd(1,100) > 40) {
+      dmg = rnd(55, 90) + armaData.bonus;
+      const cap = 200;
+      dmg = Math.min(dmg, cap);
+      msg = `🔮 <span class="log-crit">¡ATAQUE MÍSTICO!</span> <span class="log-dmg">-${dmg} HP</span>`;
+    } else {
+      msg = `🔮 <span class="log-miss">¡Ataque místico falló!</span>`;
+    }
+
+  } else if (tipo === 'curar') {
+    if (state.curarUsado) { setAllButtons(true); return; }
+    state.curarUsado = true;
+    document.getElementById('btn-curar').disabled = true;
+    const cura = rnd(25, 45);
+    state.pHP = Math.min(state.pMaxHP, state.pHP + cura);
+    msg = `✨ ${PLAYER_NAME} <span class="log-heal">se curó +${cura} HP</span>`;
+    addLog('player', msg);
+    spriteFlash('player');
+    showDmgFloat(document.getElementById('sprite-player'), cura, '#22c55e', '+');
+    updateBars();
+    state.turno++;
+    setTimeout(() => { botAttack(); setAllButtons(true); }, 600);
+    return;
+
+  } else if (tipo === 'escudo') {
+    state.escudo = true;
+    document.getElementById('btn-escudo').disabled = true;
+    msg = `🛡️ <span style="color:var(--blue)">${PLAYER_NAME} activó ESCUDO</span> (próximo ataque -50%)`;
+    addLog('player', msg);
+    state.turno++;
+    updateBars();
+    setTimeout(() => { botAttack(); setAllButtons(true); }, 600);
+    return;
+  }
+
+  // Aplicar daño al bot
+  state.eHP -= dmg;
+  state.danoTotal += dmg;
+  state.combo++;
+  addLog('player', msg);
+
+  // Animaciones
+  spriteShake('enemy');
+  spriteFlash('player');
+  if (dmg > 0) showDmgFloat(document.getElementById('sprite-enemy'), dmg, esCrit ? '#f59e0b' : '#ef4444', '-');
+
+  // Combo badge
+  const cb = document.getElementById('combo-badge');
+  if (state.combo >= 3) { cb.textContent = `🔥 COMBO x${state.combo}`; cb.classList.add('show'); }
+  else cb.classList.remove('show');
+
+  updateBars();
+  state.turno++;
+
+  if (state.eHP <= 0) {
+    state.eHP = 0; updateBars();
+    setTimeout(() => endGame(true), 400);
+    return;
+  }
+
+  setTimeout(() => { botAttack(); setAllButtons(true); }, 800);
+}
+
+// ══════════════════════════════════════════════════════
+// ATAQUE DEL BOT
+// ══════════════════════════════════════════════════════
+function botAttack() {
+  if (state.terminado) return;
+
+  // Efecto de estado
+  if (state.efecto && state.efectoTurnos > 0) {
+    const efectos = { quemado: {dmg:8, emoji:'🔥'}, envenenado: {dmg:5, emoji:'☠️'} };
+    const ef = efectos[state.efecto];
+    if (ef) {
+      state.pHP -= ef.dmg;
+      addLog('efecto', `${ef.emoji} <span class="log-dmg">-${ef.dmg} HP</span> por ${state.efecto}`);
+      showDmgFloat(document.getElementById('sprite-player'), ef.dmg, '#f97316', '-');
+    }
+    state.efectoTurnos--;
+    if (state.efectoTurnos <= 0) { state.efecto = null; updateEffects(); }
+    updateBars();
+    if (state.pHP <= 0) { setTimeout(() => endGame(false), 300); return; }
+  }
+
+  let dmgBot, msg;
+
+  // Aplicar efecto aleatorio
+  if (rnd(1,100) < 20 && PLAYER_NIVEL >= 5) {
+    const efcs = ['quemado','envenenado'];
+    state.efecto = efcs[rnd(0,1)];
+    state.efectoTurnos = state.efecto === 'quemado' ? 3 : 4;
+    dmgBot = rnd(5,12) + PLAYER_NIVEL;
+    const emojis = { quemado:'🔥', envenenado:'☠️' };
+    msg = `${emojis[state.efecto]} BOT aplicó <span style="color:#f97316">${state.efecto.toUpperCase()}</span> y <span class="log-dmg">-${dmgBot} HP</span>`;
+    updateEffects();
+  } else {
+    dmgBot = state.pHP < 40
+      ? rnd(12,22) + PLAYER_NIVEL
+      : rnd(6,14) + PLAYER_NIVEL;
+
+    if (state.escudo) {
+      dmgBot = Math.max(1, Math.floor(dmgBot / 2));
+      state.escudo = false;
+      msg = `🛡️ Escudo absorbió! BOT causó <span class="log-dmg">-${dmgBot} HP</span>`;
+    } else {
+      msg = `🤖 BOT atacó y causó <span class="log-dmg">-${dmgBot} HP</span>`;
+    }
+  }
+
+  state.pHP -= dmgBot;
+  state.combo = 0;
+  document.getElementById('combo-badge').classList.remove('show');
+  addLog('bot', msg);
+  spriteShake('player');
+  spriteFlash('enemy');
+  showDmgFloat(document.getElementById('sprite-player'), dmgBot, '#ef4444', '-');
+  updateBars();
+
+  if (state.pHP <= 0) {
+    state.pHP = 0; updateBars();
+    setTimeout(() => endGame(false), 400);
+  }
+}
+
+// Bot ataca automáticamente si el jugador está inactivo
+function botAutoAttack() {
+  if (state.terminado) return;
+  botAttack();
+}
+
+// ══════════════════════════════════════════════════════
+// EFECTOS VISUALES
+// ══════════════════════════════════════════════════════
+function updateEffects() {
+  const row = document.getElementById('effects-row');
+  row.innerHTML = '';
+  if (state.efecto) {
+    const emojis = { quemado:'🔥', envenenado:'☠️' };
+    const b = document.createElement('div');
+    b.className = 'effect-badge';
+    b.innerHTML = `${emojis[state.efecto]||'⚡'} ${state.efecto} (${state.efectoTurnos}t)`;
+    row.appendChild(b);
+  }
+  if (state.escudo) {
+    const b = document.createElement('div');
+    b.className = 'effect-badge';
+    b.style.borderColor = 'rgba(59,130,246,0.4)';
+    b.innerHTML = '🛡️ Escudo activo';
+    row.appendChild(b);
+  }
+}
+
+function spriteShake(who) {
+  const el = document.getElementById(`sprite-${who}`);
+  el.classList.remove('shake');
+  void el.offsetWidth;
+  el.classList.add('shake');
+}
+function spriteFlash(who) {
+  const el = document.getElementById(`sprite-${who}`);
+  el.classList.remove('attack-flash');
+  void el.offsetWidth;
+  el.classList.add('attack-flash');
+}
+
+function setAllButtons(enabled) {
+  const btns = document.querySelectorAll('.btn-attack');
+  btns.forEach(b => {
+    if (!b.hasAttribute('data-perm-disabled')) {
+      b.disabled = !enabled;
+    }
+  });
+  // Restaurar los que ya se usaron
+  if (state.especialUsado) document.getElementById('btn-especial').disabled = true;
+  if (state.curarUsado)    document.getElementById('btn-curar').disabled = true;
+  if (PLAYER_NIVEL < 5)    document.getElementById('btn-especial').disabled = true;
+  if (PLAYER_NIVEL < 10)   document.getElementById('btn-escudo').disabled = true;
+}
+
+// ══════════════════════════════════════════════════════
+// FIN DE JUEGO
+// ══════════════════════════════════════════════════════
+function endGame(victoria) {
+  if (state.terminado) return;
+  state.terminado = true;
+
+  const overlay   = document.getElementById('overlay');
+  const card      = document.getElementById('result-card');
+  const emoji     = document.getElementById('result-emoji');
+  const title     = document.getElementById('result-title');
+  const statsEl   = document.getElementById('result-stats');
+
+  if (victoria) {
+    card.className  = 'result-card victory';
+    emoji.textContent = '🏆';
+    title.textContent = '¡VICTORIA ÉPICA!';
+    statsEl.innerHTML = `
+      Daño total infligido: <span>${state.danoTotal}</span><br>
+      Turnos jugados: <span>${state.turno}</span><br>
+      HP restante: <span>${Math.max(0,state.pHP)}</span><br>
+      Puntos estimados: <span>+${100 + PLAYER_NIVEL * 25}</span>
+    `;
+    // === NUEVO: GUARDAR PROGRESO ===
+    guardarProgreso(100 + PLAYER_NIVEL * 25, 300, "batalla");
+  } else {
+    card.className  = 'result-card defeat';
+    emoji.textContent = '💀';
+    title.textContent = '¡DERROTA!';
+    statsEl.innerHTML = `
+      Daño total infligido: <span>${state.danoTotal}</span><br>
+      Turnos resistidos: <span>${state.turno}</span><br>
+      Sigue entrenando con <span>!entrenar</span>
+    `;
+    mostrarComandoDiscord("derrota", "batalla");
+  }
+
+  overlay.classList.add('show');
+}
+
+function reiniciar() {
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('effects-row').innerHTML = '';
+  document.getElementById('combo-badge').classList.remove('show');
+  // Rehabilitar botones
+  document.querySelectorAll('.btn-attack').forEach(b => b.disabled = false);
+  checkLockedSkills();
+  initState();
+  updateBars();
+  addLog('sistema', `⚔️ ¡Nueva batalla! ${PLAYER_NAME} vs BOT Lv.${PLAYER_NIVEL}`);
+}
+
+// ====================== TUTORIAL AUTOMÁTICO (primera vez) ======================
+const TUTORIAL_KEY = "mystic_batalla_tutorial_v2";
+
+const TUTORIAL_PASOS = [
+  {
+    icon: "⚔️",
+    titulo: "¡Bienvenido a Batalla Mística!",
+    desc: "Aquí pelearás contra el bot usando habilidades especiales. Este tutorial te guiará paso a paso antes de empezar.",
+    color: "#7c3aed"
+  },
+  {
+    icon: "❤️",
+    titulo: "Barras de Vida",
+    desc: "La barra VERDE es tu vida. La barra ROJA es la del enemigo. Si tu vida llega a 0, pierdes. ¡Mantente con vida!",
+    color: "#ef4444"
+  },
+  {
+    icon: "🔫",
+    titulo: "Botones de Ataque",
+    desc: "<b>Disparar</b> — ataque básico rápido.<br><b>Láser ⚡</b> — más daño pero sin crítico garantizado.<br><b>Místico 🔮</b> — ataque poderoso (1 uso por partida).<br><b>Curar ✨</b> — recupera HP (1 uso por partida).",
+    color: "#3b82f6"
+  },
+  {
+    icon: "💥",
+    titulo: "Golpes Críticos",
+    desc: "Cada arma tiene % de crítico. Un crítico hace el DOBLE de daño. ¡Cuanto mejor tu arma en Discord, más críticos harás!",
+    color: "#f59e0b"
+  },
+  {
+    icon: "🤖",
+    titulo: "El Bot Ataca Solo",
+    desc: "Cada 7 segundos el bot te atacará automáticamente. ¡No te demores en atacar o perderás mucha vida!",
+    color: "#ef4444"
+  },
+  {
+    icon: "🏆",
+    titulo: "¡Listo para pelear!",
+    desc: "Gana la batalla para obtener puntos y XP en Discord. Al terminar aparecerá un comando para registrar el resultado.",
+    color: "#22c55e"
+  }
+];
+
+let tutorialPaso = 0;
+let tutorialModal = null;
+
+function mostrarTutorial() {
+  if (localStorage.getItem(TUTORIAL_KEY)) return;
+  tutorialPaso = 0;
+  renderTutorialPaso();
+}
+
+function renderTutorialPaso() {
+  if (tutorialModal) tutorialModal.remove();
+  const paso = TUTORIAL_PASOS[tutorialPaso];
+  const total = TUTORIAL_PASOS.length;
+  const progreso = Math.round(((tutorialPaso + 1) / total) * 100);
+
+  tutorialModal = document.createElement("div");
+  tutorialModal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;padding:20px;";
+  const btnAnterior = tutorialPaso > 0
+    ? '<button onclick="tutorialAnterior()" style="background:#1a1a2e;color:#a0aec0;padding:10px 22px;border:1px solid #2a2a4a;border-radius:10px;font-size:.95rem;cursor:pointer;font-family:Rajdhani,sans-serif;">← Anterior</button>'
+    : '';
+  const btnSiguiente = tutorialPaso < total - 1
+    ? '<button onclick="tutorialSiguiente()" style="background:' + paso.color + ';color:white;padding:10px 28px;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;">Siguiente →</button>'
+    : '<button onclick="cerrarTutorial()" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:white;padding:12px 32px;border:none;border-radius:10px;font-size:1.05rem;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;">⚔️ ¡A luchar!</button>';
+
+  tutorialModal.innerHTML =
+    '<div style="background:#11111a;border:3px solid ' + paso.color + ';border-radius:20px;padding:32px;max-width:480px;width:100%;color:#e2e8f0;text-align:center;box-shadow:0 0 50px ' + paso.color + '55;">' +
+    '<div style="font-size:3.5rem;margin-bottom:12px;">' + paso.icon + '</div>' +
+    '<h2 style="color:' + paso.color + ';margin-bottom:14px;font-size:1.3rem;letter-spacing:1px;">' + paso.titulo + '</h2>' +
+    '<p style="color:#a0aec0;line-height:1.7;font-size:1rem;margin-bottom:24px;">' + paso.desc + '</p>' +
+    '<div style="background:#1a1a2e;border-radius:999px;height:6px;margin-bottom:20px;overflow:hidden;">' +
+    '<div style="height:100%;width:' + progreso + '%;background:linear-gradient(90deg,' + paso.color + ',#f59e0b);border-radius:999px;transition:width .4s;"></div></div>' +
+    '<div style="color:#64748b;font-size:.8rem;margin-bottom:20px;">Paso ' + (tutorialPaso + 1) + ' de ' + total + '</div>' +
+    '<div style="display:flex;gap:10px;justify-content:center;">' + btnAnterior + btnSiguiente + '</div>' +
+    '</div>';
+  document.body.appendChild(tutorialModal);
+}
+
+function tutorialSiguiente() { tutorialPaso++; renderTutorialPaso(); }
+function tutorialAnterior() { tutorialPaso--; renderTutorialPaso(); }
+function cerrarTutorial() {
+  if (tutorialModal) tutorialModal.remove();
+  localStorage.setItem(TUTORIAL_KEY, "true");
+}
+
+// ====================== SEÑAL AL BOT DE DISCORD ======================
+function guardarProgreso(xp, pts, tipoJuego) {
+  mostrarComandoDiscord("victoria", tipoJuego);
+}
+
+function mostrarComandoDiscord(resultado, juego) {
+  const cmd = "!resultado_web " + resultado + " " + juego;
+  const color = resultado === "victoria" ? "#22c55e" : "#ef4444";
+  const titulo = resultado === "victoria" ? "GANASTE! Pega esto en Discord:" : "PERDISTE. Pega esto en Discord:";
+  const div = document.createElement("div");
+  div.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#11111a;border:2px solid " + color + ";padding:14px 22px;border-radius:12px;color:" + color + ";font-weight:700;z-index:9999;text-align:center;max-width:95%;font-family:Rajdhani,sans-serif;font-size:.9rem;box-shadow:0 0 30px " + color + "33;";
+  div.innerHTML = "<b>" + titulo + "</b><br><span style='background:#1a1a2e;padding:5px 12px;border-radius:6px;color:#fff;font-size:1rem;display:inline-block;margin-top:6px;'>" + cmd + "</span>";
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 15000);
+}
+
+// Arrancar
+window.addEventListener('load', () => {
+  setTimeout(init, 600);
+  setTimeout(mostrarTutorial, 1200);
+});
+</script>
+</body>
+</html>
