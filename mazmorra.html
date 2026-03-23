@@ -448,6 +448,92 @@ endGame = function(win, reason) {
   }
 };
 
+// ====================== TUTORIAL PASO A PASO - MAZMORRA ======================
+const TUTORIAL_KEY_MAZ = "mystic_mazmorra_tutorial_v2";
+
+const TUTORIAL_PASOS_MAZ = [
+  {
+    icon: "🗺️",
+    titulo: "¡Bienvenido a las Mazmorras!",
+    desc: "Las mazmorras son dungeons con multiples pisos llenos de enemigos. Debes vencer a todos para completarla y ganar la recompensa.",
+    color: "#f0a500"
+  },
+  {
+    icon: "🕳️",
+    titulo: "Elige tu Mazmorra",
+    desc: "<b>Cueva Sombria</b> (3 pisos) — Facil<br><b>Torre del Caos</b> (5 pisos) — Media<br><b>Abismo Eterno</b> (7 pisos) — Dificil<br>Mayor dificultad = mayor recompensa.",
+    color: "#00e676"
+  },
+  {
+    icon: "⚔️",
+    titulo: "El Combate",
+    desc: "Usa <b>Atacar</b> para dañar al enemigo. Usa <b>Especial</b> (1 uso por piso) para un golpe mas poderoso. El enemigo se hace mas fuerte en cada piso.",
+    color: "#f0a500"
+  },
+  {
+    icon: "💚",
+    titulo: "Curacion entre Pisos",
+    desc: "Al pasar cada piso recuperas el <b>18% de tu HP</b> automaticamente. Administra bien tu vida para llegar al jefe final.",
+    color: "#00e676"
+  },
+  {
+    icon: "🔫",
+    titulo: "Tu Arma de Discord",
+    desc: "El juego usa automaticamente el arma que tienes equipada en Discord. Mejor arma = mas daño. Compra armas en Discord con <b>!tienda</b>.",
+    color: "#4361ee"
+  },
+  {
+    icon: "🏆",
+    titulo: "¡Listo para explorar!",
+    desc: "Al completar la mazmorra o ser derrotado, aparecera un comando para registrar el resultado en Discord. ¡Buena suerte!",
+    color: "#f0a500"
+  }
+];
+
+let mazTutorialPaso = 0;
+let mazTutorialModal = null;
+
+function mostrarTutorialMazmorra() {
+  if (localStorage.getItem(TUTORIAL_KEY_MAZ)) return;
+  mazTutorialPaso = 0;
+  renderMazTutorial();
+}
+
+function renderMazTutorial() {
+  if (mazTutorialModal) mazTutorialModal.remove();
+  const paso = TUTORIAL_PASOS_MAZ[mazTutorialPaso];
+  const total = TUTORIAL_PASOS_MAZ.length;
+  const progreso = Math.round(((mazTutorialPaso + 1) / total) * 100);
+
+  const btnAnterior = mazTutorialPaso > 0
+    ? '<button onclick="mazTutorialAnterior()" style="background:#0c0c20;color:#a0aec0;padding:10px 22px;border:1px solid #1a1a3a;border-radius:10px;font-size:.95rem;cursor:pointer;font-family:Rajdhani,sans-serif;">← Anterior</button>'
+    : '';
+  const btnSiguiente = mazTutorialPaso < total - 1
+    ? '<button onclick="mazTutorialSiguiente()" style="background:' + paso.color + ';color:#000;padding:10px 28px;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;">Siguiente →</button>'
+    : '<button onclick="cerrarTutorialMaz()" style="background:linear-gradient(135deg,#f0a500,#c17d00);color:#000;padding:12px 32px;border:none;border-radius:10px;font-size:1.05rem;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;">🗺️ ¡Entrar!</button>';
+
+  mazTutorialModal = document.createElement('div');
+  mazTutorialModal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;font-family:Rajdhani,sans-serif;padding:20px;';
+  mazTutorialModal.innerHTML =
+    '<div style="background:#080818;border:3px solid ' + paso.color + ';border-radius:20px;padding:32px;max-width:480px;width:100%;color:#e8e8ff;text-align:center;box-shadow:0 0 50px ' + paso.color + '55;">' +
+    '<div style="font-size:3.5rem;margin-bottom:12px;">' + paso.icon + '</div>' +
+    '<h2 style="color:' + paso.color + ';margin-bottom:14px;font-size:1.25rem;letter-spacing:1px;">' + paso.titulo + '</h2>' +
+    '<p style="color:#a0aec0;line-height:1.7;font-size:.98rem;margin-bottom:24px;">' + paso.desc + '</p>' +
+    '<div style="background:#1a1a3a;border-radius:999px;height:6px;margin-bottom:20px;overflow:hidden;">' +
+    '<div style="height:100%;width:' + progreso + '%;background:linear-gradient(90deg,' + paso.color + ',#ffd166);border-radius:999px;transition:width .4s;"></div></div>' +
+    '<div style="color:#5a5a8a;font-size:.8rem;margin-bottom:20px;">Paso ' + (mazTutorialPaso + 1) + ' de ' + total + '</div>' +
+    '<div style="display:flex;gap:10px;justify-content:center;">' + btnAnterior + btnSiguiente + '</div>' +
+    '</div>';
+  document.body.appendChild(mazTutorialModal);
+}
+
+function mazTutorialSiguiente() { mazTutorialPaso++; renderMazTutorial(); }
+function mazTutorialAnterior() { mazTutorialPaso--; renderMazTutorial(); }
+function cerrarTutorialMaz() {
+  if (mazTutorialModal) mazTutorialModal.remove();
+  localStorage.setItem(TUTORIAL_KEY_MAZ, 'true');
+}
+
 // Cargar datos del URL al iniciar
 window.addEventListener('load', () => {
   initFromURL();
